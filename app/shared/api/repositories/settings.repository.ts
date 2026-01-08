@@ -5,7 +5,7 @@ import { logger } from '../../lib/logger'
 export const settingsRepository = {
   async get(signal?: AbortSignal): Promise<Settings> {
     const client = useApiClient()
-    const response = await client.get<unknown>('/settings', { signal })
+    const response = await client.get('/settings', { signal })
 
     const result = SettingsSchema.safeParse(response)
     if (!result.success) {

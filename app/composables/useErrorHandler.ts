@@ -1,5 +1,6 @@
 import { ApiError } from '~/shared/api/client'
 import { useAuth } from '~/features/auth/composables/useAuth'
+import { useOnlineStatus } from './useOnlineStatus'
 
 interface ErrorMessage {
   title: string
@@ -23,7 +24,7 @@ const getClientErrorMessage = (status: number, message: string): ErrorMessage =>
     case 401:
       return {
         title: 'Ошибка авторизации',
-        description: message || 'Неверное имя пользователя или пароль',
+        description: message || 'Неверный логин или пароль. Проверьте введенные данные и попробуйте снова',
         icon: 'i-lucide-lock',
         action: 'Проверьте данные и попробуйте войти снова'
       }
@@ -107,18 +108,28 @@ const getErrorMessage = (status: number, message: string): ErrorMessage => {
  */
 export function useErrorHandler() {
   const toast = useToast()
+  const { isOnline } = useOnlineStatus()
 
-  /**
-   * Handles errors and shows appropriate user notifications
-   * @param error - Error object (ApiError, Error, or unknown)
-   */
   const handleError = (error: unknown) => {
     if (error instanceof ApiError) {
       const { title, description, icon, action } = getErrorMessage(error.status, error.message)
 
       if (error.status === 401) {
-        const { logout } = useAuth()
-        logout()
+        const { isAuthenticated, logout } = useAuth()
+
+        const errorMessage = error.message || 'Неверный логин или пароль. Проверьте введенные данные и попробуйте снова'
+
+        toast.add({
+          title,
+          description: errorMessage,
+          color: 'red',
+          icon,
+          timeout: 5000
+        })
+
+        if (isAuthenticated.value) {
+          logout()
+        }
         return
       }
 
@@ -135,11 +146,21 @@ export function useErrorHandler() {
       }
 
       const isNetworkError = error.message.includes('Failed to fetch') || error.message.includes('NetworkError')
+
+      if (!isOnline.value || isNetworkError) {
+        toast.add({
+          title: 'Нет подключения к интернету',
+          description: 'Проверьте подключение к интернету и попробуйте снова',
+          color: 'red',
+          icon: 'i-lucide-wifi-off',
+          timeout: 5000
+        })
+        return
+      }
+
       toast.add({
         title: 'Ошибка сети',
-        description: isNetworkError
-          ? 'Не удалось подключиться к серверу. Проверьте подключение к интернету и попробуйте снова'
-          : (error.message || 'Проверьте подключение к интернету'),
+        description: error.message || 'Проверьте подключение к интернету',
         color: 'red',
         icon: 'i-lucide-wifi-off',
         timeout: 5000

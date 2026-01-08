@@ -14,7 +14,7 @@ describe('useErrorHandler', () => {
   let toast: { add: ReturnType<typeof vi.fn> }
   let navigateTo: ReturnType<typeof vi.fn>
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     const { useToast } = await import('#app')
     const { navigateTo: nav } = await import('#app')

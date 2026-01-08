@@ -5,7 +5,7 @@ import { logger } from '../../lib/logger'
 export const authRepository = {
   async login(credentials: LoginRequest, signal?: AbortSignal): Promise<AuthResponse> {
     const client = useApiClient()
-    const response = await client.post<unknown>('/login', credentials, { signal })
+    const response = await client.post('/login', credentials, { signal })
 
     const result = AuthResponseSchema.safeParse(response)
     if (!result.success) {
@@ -22,7 +22,7 @@ export const authRepository = {
       username: credentials.username,
       password: credentials.password
     }
-    const response = await client.post<unknown>('/register', apiRequest, { signal })
+    const response = await client.post('/register', apiRequest, { signal })
 
     const result = AuthResponseSchema.safeParse(response)
     if (!result.success) {

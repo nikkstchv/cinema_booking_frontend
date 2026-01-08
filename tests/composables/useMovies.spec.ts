@@ -10,10 +10,21 @@ vi.mock('~/shared/api/repositories', () => ({
   }
 }))
 
-vi.mock('#app', () => ({
-  computed: vi.fn((fn: () => unknown) => ({ value: fn() })),
-  toValue: vi.fn((val: unknown) => val)
-}))
+vi.mock('vue', async () => {
+  const actual = await vi.importActual('vue')
+  return {
+    ...actual,
+    computed: (fn: () => unknown) => ({ value: fn() }),
+    toValue: (val: unknown) => val
+  }
+})
+
+const waitForLoading = async (isLoading: { value: boolean }, timeout = 5000) => {
+  const startTime = Date.now()
+  while (isLoading.value && Date.now() - startTime < timeout) {
+    await new Promise(resolve => setTimeout(resolve, 10))
+  }
+}
 
 describe('useMovies', () => {
   beforeEach(() => {
@@ -35,11 +46,13 @@ describe('useMovies', () => {
       ]
       vi.mocked(moviesRepository.getAll).mockResolvedValue(mockMovies)
 
-      useMovies()
+      const result = useMovies()
 
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await waitForLoading(result.isLoading)
 
-      expect(moviesRepository.getAll).toHaveBeenCalled()
+      expect(moviesRepository.getAll).toHaveBeenCalledTimes(1)
+      expect(result.isLoading.value).toBe(false)
+      expect(result.data.value).toEqual(mockMovies)
     })
 
     it('sorts movies by rating descending', async () => {
@@ -52,11 +65,25 @@ describe('useMovies', () => {
 
       const result = useMovies()
 
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await waitForLoading(result.isLoading)
 
-      expect(result.data.value?.[0].rating).toBe(9.0)
-      expect(result.data.value?.[1].rating).toBe(8.0)
-      expect(result.data.value?.[2].rating).toBe(7.0)
+      expect(result.data.value).toBeDefined()
+      if (result.data.value) {
+        expect(result.data.value[0].rating).toBe(9.0)
+        expect(result.data.value[1].rating).toBe(8.0)
+        expect(result.data.value[2].rating).toBe(7.0)
+      }
+    })
+
+    it('handles fetch error', async () => {
+      const error = new Error('Failed to fetch movies')
+      vi.mocked(moviesRepository.getAll).mockRejectedValue(error)
+
+      const result = useMovies()
+
+      await waitForLoading(result.isLoading)
+
+      expect(result.error.value).toBeDefined()
     })
   })
 
@@ -72,17 +99,31 @@ describe('useMovies', () => {
       ]
       vi.mocked(moviesRepository.getSessions).mockResolvedValue(mockSessions)
 
-      useMovieSessions(1)
+      const result = useMovieSessions(1)
 
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await waitForLoading(result.isLoading)
 
       expect(moviesRepository.getSessions).toHaveBeenCalledWith(1, expect.anything())
+      expect(result.isLoading.value).toBe(false)
+      expect(result.data.value).toEqual(mockSessions)
     })
 
     it('does not fetch when movieId is 0', () => {
-      const { enabled } = useMovieSessions(0)
+      const result = useMovieSessions(0)
 
-      expect(enabled.value).toBe(false)
+      expect(result.enabled.value).toBe(false)
+      expect(moviesRepository.getSessions).not.toHaveBeenCalled()
+    })
+
+    it('handles fetch error', async () => {
+      const error = new Error('Failed to fetch sessions')
+      vi.mocked(moviesRepository.getSessions).mockRejectedValue(error)
+
+      const result = useMovieSessions(1)
+
+      await waitForLoading(result.isLoading)
+
+      expect(result.error.value).toBeDefined()
     })
   })
 })

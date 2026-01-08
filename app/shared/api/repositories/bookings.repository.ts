@@ -6,7 +6,7 @@ import { logger } from '../../lib/logger'
 export const bookingsRepository = {
   async getMyBookings(signal?: AbortSignal): Promise<Booking[]> {
     const client = useApiClient()
-    const response = await client.get<unknown>('/me/bookings', { signal })
+    const response = await client.get('/me/bookings', { signal })
 
     const result = z.array(BookingSchema).safeParse(response)
     if (!result.success) {
@@ -19,7 +19,7 @@ export const bookingsRepository = {
 
   async pay(bookingId: string, signal?: AbortSignal): Promise<PaymentResponse> {
     const client = useApiClient()
-    const response = await client.post<unknown>(
+    const response = await client.post(
       `/bookings/${bookingId}/payments`,
       {},
       { signal }

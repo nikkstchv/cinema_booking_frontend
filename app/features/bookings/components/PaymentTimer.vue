@@ -11,6 +11,9 @@ const emit = defineEmits<{
 }>()
 
 const calculateRemaining = (): number => {
+  if (import.meta.server) {
+    return 0
+  }
   const bookedTime = new Date(props.bookedAt).getTime()
   const expiryTime = bookedTime + props.timeoutSeconds * 1000
   const now = Date.now()
@@ -18,26 +21,27 @@ const calculateRemaining = (): number => {
   return Math.max(0, remaining)
 }
 
-const initialSeconds = ref(calculateRemaining())
+const initialSeconds = ref(0)
 
-const { formattedTime, isExpired, remainingSeconds, reset } = useCountdown(
+const { formattedTime, isExpired, remainingSeconds, reset, start } = useCountdown(
   initialSeconds.value,
   () => emit('expired')
 )
 
-watch(() => [props.bookedAt, props.timeoutSeconds], () => {
-  const newRemaining = calculateRemaining()
-  reset(newRemaining)
-}, { immediate: false })
-
 onMounted(() => {
   const newRemaining = calculateRemaining()
-  if (newRemaining !== initialSeconds.value) {
-    reset(newRemaining)
-  }
+  initialSeconds.value = newRemaining
+  reset(newRemaining)
+  start()
 })
 
-// Warning state when less than 1 minute left
+watch(() => [props.bookedAt, props.timeoutSeconds], () => {
+  if (import.meta.client) {
+    const newRemaining = calculateRemaining()
+    reset(newRemaining)
+  }
+}, { immediate: false })
+
 const isWarning = computed(() =>
   remainingSeconds.value > 0 && remainingSeconds.value <= 60
 )

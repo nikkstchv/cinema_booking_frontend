@@ -91,6 +91,7 @@ const showPayButton = computed(() =>
 
           <UButton
             v-if="showPayButton"
+            data-testid="pay-button"
             size="sm"
             :loading="payLoading"
             @click="emit('pay')"

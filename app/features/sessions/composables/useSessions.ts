@@ -14,10 +14,9 @@ export function useSessionDetails(sessionId: number | Ref<number>) {
     queryKey: computed(() => queryKeys.sessions.detail(id.value)),
     queryFn: ({ signal }) => sessionsRepository.getById(id.value, signal),
     enabled: computed(() => id.value > 0),
-    // Refresh on window focus to get latest booked seats
     refetchOnWindowFocus: true,
-    // Short stale time for seat availability
-    staleTime: 10 * 1000 // 10 seconds
+    staleTime: 10 * 1000,
+    gcTime: 2 * 60 * 1000
   })
 }
 
@@ -135,13 +134,21 @@ export function useBookSession(sessionId: number | Ref<number>) {
 
 /**
  * Get multiple session details by IDs
+ * Optimized to use parallel requests with proper caching
  */
 export function useSessionsBatch(sessionIds: Ref<number[]>) {
-  const ids = computed(() => sessionIds.value)
+  const ids = computed(() => {
+    const uniqueIds = [...new Set(sessionIds.value)]
+    return uniqueIds.filter(id => id > 0)
+  })
 
   return useQuery({
-    queryKey: computed(() => [...queryKeys.sessions.detail(0), 'batch', ids.value]),
+    queryKey: computed(() => [...queryKeys.sessions.detail(0), 'batch', ids.value.sort((a, b) => a - b)]),
     queryFn: async ({ signal }) => {
+      if (ids.value.length === 0) {
+        return []
+      }
+
       const sessionDetails = await Promise.all(
         ids.value.map(id => sessionsRepository.getById(id, signal))
       )
@@ -154,6 +161,7 @@ export function useSessionsBatch(sessionIds: Ref<number[]>) {
       }))
     },
     enabled: computed(() => ids.value.length > 0),
-    staleTime: 60 * 1000
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000
   })
 }

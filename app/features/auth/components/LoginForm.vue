@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { LoginRequestSchema } from '~/shared/schemas'
-import { ApiError } from '~/shared/api/client'
 import { useAuth } from '../composables/useAuth'
 import type { FormSubmitEvent } from '#ui/types'
 
@@ -31,20 +30,10 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       icon: 'i-lucide-check-circle'
     })
 
-    const redirect = route.query.redirect as string || '/my-tickets'
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/my-tickets'
     navigateTo(redirect)
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
-      const toast = useToast()
-      toast.add({
-        title: 'Ошибка авторизации',
-        description: 'Неверный логин или пароль. Проверьте введенные данные и попробуйте снова',
-        color: 'red',
-        icon: 'i-lucide-lock'
-      })
-    } else {
-      handleError(error)
-    }
+    handleError(error)
   } finally {
     isLoading.value = false
   }
@@ -63,6 +52,7 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
     </template>
 
     <UForm
+      data-testid="login-form"
       :schema="LoginRequestSchema"
       :state="form"
       class="space-y-4"
@@ -75,6 +65,7 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       >
         <UInput
           v-model="form.username"
+          data-testid="username-input"
           placeholder="Введите логин"
           icon="i-lucide-user"
           size="lg"
@@ -88,6 +79,7 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       >
         <UInput
           v-model="form.password"
+          data-testid="password-input"
           type="password"
           placeholder="Введите пароль"
           icon="i-lucide-lock"
@@ -97,6 +89,7 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       </UFormGroup>
 
       <UButton
+        data-testid="submit-button"
         type="submit"
         block
         size="lg"

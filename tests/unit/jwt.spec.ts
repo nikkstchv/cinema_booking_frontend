@@ -26,10 +26,22 @@ describe('JWT utilities', () => {
     expect(decodeJWT('part1.part2')).toBeNull()
   })
 
-  it('returns null for missing sub', () => {
+  it('returns null for missing sub and id', () => {
     const token = createToken({ exp: Math.floor(Date.now() / 1000) + 3600 })
     const decoded = decodeJWT(token)
     expect(decoded).toBeNull()
+  })
+
+  it('decodes token with id instead of sub', () => {
+    const token = createToken({ id: 456, exp: Math.floor(Date.now() / 1000) + 3600 })
+    const decoded = decodeJWT(token)
+    expect(decoded).toEqual({ id: 456, exp: expect.any(Number) })
+  })
+
+  it('prefers sub over id when both present', () => {
+    const token = createToken({ sub: 123, id: 456, exp: Math.floor(Date.now() / 1000) + 3600 })
+    const decoded = decodeJWT(token)
+    expect(decoded).toEqual({ id: 123, exp: expect.any(Number) })
   })
 
   it('handles token without exp', () => {

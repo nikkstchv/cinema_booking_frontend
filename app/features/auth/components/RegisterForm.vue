@@ -55,6 +55,7 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
     </template>
 
     <UForm
+      data-testid="register-form"
       :schema="RegisterRequestSchema"
       :state="form"
       class="space-y-4"
@@ -67,6 +68,7 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       >
         <UInput
           v-model="form.username"
+          data-testid="username-input"
           placeholder="Минимум 8 символов"
           icon="i-lucide-user"
           size="lg"
@@ -80,6 +82,7 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       >
         <UInput
           v-model="form.password"
+          data-testid="password-input"
           type="password"
           placeholder="Минимум 8 символов, 1 заглавная, 1 цифра"
           icon="i-lucide-lock"
@@ -94,6 +97,7 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       >
         <UInput
           v-model="form.passwordConfirmation"
+          data-testid="password-confirmation-input"
           type="password"
           placeholder="Повторите пароль"
           icon="i-lucide-lock"
@@ -103,6 +107,7 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       </UFormGroup>
 
       <UButton
+        data-testid="submit-button"
         type="submit"
         block
         size="lg"

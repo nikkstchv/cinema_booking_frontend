@@ -26,79 +26,126 @@ describe('useAuth', () => {
     vi.clearAllMocks()
   })
 
-  it('decodes JWT token correctly', () => {
-    const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEyM30.signature'
-    const { useCookie } = await import('#app')
-    vi.mocked(useCookie).mockReturnValue({ value: mockToken } as ReturnType<typeof useCookie>)
+  describe('token management', () => {
+    context('when token is valid', () => {
+      it('decodes JWT token correctly', async () => {
+        const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEyM30.signature'
+        const { useCookie } = await import('#app')
+        vi.mocked(useCookie).mockReturnValue({ value: mockToken } as ReturnType<typeof useCookie>)
 
-    const auth = useAuth()
-    auth.init()
+        const auth = useAuth()
+        auth.init()
 
-    expect(auth.user.value).toEqual({ id: 123 })
-  })
+        expect(auth.user.value).toEqual({ id: 123 })
+      })
 
-  it('returns null for invalid token', async () => {
-    const { useCookie } = await import('#app')
-    vi.mocked(useCookie).mockReturnValue({ value: 'invalid-token' } as ReturnType<typeof useCookie>)
+      it('computes isAuthenticated correctly', async () => {
+        const { useCookie } = await import('#app')
+        const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEyM30.signature'
+        vi.mocked(useCookie).mockReturnValue({ value: mockToken } as ReturnType<typeof useCookie>)
 
-    const auth = useAuth()
-    auth.init()
+        const auth = useAuth()
+        auth.init()
 
-    expect(auth.user.value).toBeNull()
-  })
+        expect(auth.isAuthenticated.value).toBe(true)
+      })
+    })
 
-  it('calls login repository on login', async () => {
-    const mockResponse = { token: 'test-token' }
-    vi.mocked(authRepository.login).mockResolvedValue(mockResponse)
+    context('when token is invalid', () => {
+      it('returns null for invalid token', async () => {
+        const { useCookie } = await import('#app')
+        vi.mocked(useCookie).mockReturnValue({ value: 'invalid-token' } as ReturnType<typeof useCookie>)
 
-    const { useCookie } = await import('#app')
-    vi.mocked(useCookie).mockReturnValue({ value: null } as ReturnType<typeof useCookie>)
+        const auth = useAuth()
+        auth.init()
 
-    const auth = useAuth()
-    await auth.login({ username: 'testuser', password: 'password123' })
-
-    expect(authRepository.login).toHaveBeenCalledWith({
-      username: 'testuser',
-      password: 'password123'
+        expect(auth.user.value).toBeNull()
+      })
     })
   })
 
-  it('calls register repository on register', async () => {
-    const mockResponse = { token: 'test-token' }
-    vi.mocked(authRepository.register).mockResolvedValue(mockResponse)
+  describe('authentication', () => {
+    context('when login succeeds', () => {
+      it('calls login repository on login', async () => {
+        const mockResponse = { token: 'test-token' }
+        vi.mocked(authRepository.login).mockResolvedValue(mockResponse)
 
-    const { useCookie } = await import('#app')
-    vi.mocked(useCookie).mockReturnValue({ value: null } as ReturnType<typeof useCookie>)
+        const { useCookie } = await import('#app')
+        vi.mocked(useCookie).mockReturnValue({ value: null } as ReturnType<typeof useCookie>)
 
-    const auth = useAuth()
-    await auth.register({ username: 'newuser', password: 'Password1' })
+        const auth = useAuth()
+        await auth.login({ username: 'testuser', password: 'password123' })
 
-    expect(authRepository.register).toHaveBeenCalledWith({
-      username: 'newuser',
-      password: 'Password1'
+        expect(authRepository.login).toHaveBeenCalledTimes(1)
+        expect(authRepository.login).toHaveBeenCalledWith({
+          username: 'testuser',
+          password: 'password123'
+        })
+      })
+    })
+
+    context('when login fails', () => {
+      it('handles login error', async () => {
+        const error = new Error('Invalid credentials')
+        vi.mocked(authRepository.login).mockRejectedValue(error)
+
+        const { useCookie } = await import('#app')
+        vi.mocked(useCookie).mockReturnValue({ value: null } as ReturnType<typeof useCookie>)
+
+        const auth = useAuth()
+
+        await expect(auth.login({ username: 'testuser', password: 'wrong' })).rejects.toThrow()
+      })
     })
   })
 
-  it('clears token on logout', async () => {
-    const { useCookie, navigateTo } = await import('#app')
-    const tokenCookie = { value: 'test-token' }
-    vi.mocked(useCookie).mockReturnValue(tokenCookie as ReturnType<typeof useCookie>)
+  describe('registration', () => {
+    context('when registration succeeds', () => {
+      it('calls register repository on register', async () => {
+        const mockResponse = { token: 'test-token' }
+        vi.mocked(authRepository.register).mockResolvedValue(mockResponse)
 
-    const auth = useAuth()
-    auth.logout()
+        const { useCookie } = await import('#app')
+        vi.mocked(useCookie).mockReturnValue({ value: null } as ReturnType<typeof useCookie>)
 
-    expect(tokenCookie.value).toBeNull()
-    expect(navigateTo).toHaveBeenCalledWith('/movies')
+        const auth = useAuth()
+        await auth.register({ username: 'newuser', password: 'Password1' })
+
+        expect(authRepository.register).toHaveBeenCalledTimes(1)
+        expect(authRepository.register).toHaveBeenCalledWith({
+          username: 'newuser',
+          password: 'Password1'
+        })
+      })
+    })
+
+    context('when registration fails', () => {
+      it('handles registration error', async () => {
+        const error = new Error('Username already exists')
+        vi.mocked(authRepository.register).mockRejectedValue(error)
+
+        const { useCookie } = await import('#app')
+        vi.mocked(useCookie).mockReturnValue({ value: null } as ReturnType<typeof useCookie>)
+
+        const auth = useAuth()
+
+        await expect(auth.register({ username: 'existing', password: 'Password1' })).rejects.toThrow()
+      })
+    })
   })
 
-  it('computes isAuthenticated correctly', async () => {
-    const { useCookie } = await import('#app')
-    const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEyM30.signature'
-    vi.mocked(useCookie).mockReturnValue({ value: mockToken } as ReturnType<typeof useCookie>)
+  describe('logout', () => {
+    it('clears token on logout', async () => {
+      const { useCookie, navigateTo } = await import('#app')
+      const tokenCookie = { value: 'test-token' }
+      vi.mocked(useCookie).mockReturnValue(tokenCookie as ReturnType<typeof useCookie>)
 
-    const auth = useAuth()
-    auth.init()
+      const auth = useAuth()
+      auth.logout()
 
-    expect(auth.isAuthenticated.value).toBe(true)
+      expect(tokenCookie.value).toBeNull()
+      expect(navigateTo).toHaveBeenCalledTimes(1)
+      expect(navigateTo).toHaveBeenCalledWith('/movies')
+    })
   })
 })

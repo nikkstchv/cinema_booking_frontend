@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import type { Seat, SeatsInfo } from '~/shared/schemas'
-import { debounce } from '~/shared/lib/useDebounce'
 import SeatLegend from './SeatLegend.vue'
 
 const props = defineProps<{
   seatsInfo: SeatsInfo
   bookedSeats: Seat[]
   disabled?: boolean
+  maxSeats?: number
+  isAuthenticated?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:selected': [seats: Seat[]]
+  'login-required': []
 }>()
 
 const selectedSeats = ref<Seat[]>([])
@@ -29,7 +31,10 @@ const isSelected = (row: number, seat: number): boolean => {
   )
 }
 
-const toggleSeatDebounced = debounce((row: number, seat: number) => {
+const toast = useToast()
+const showLoginModal = ref(false)
+
+const toggleSeat = (row: number, seat: number) => {
   if (props.disabled || isBooked(row, seat)) return
 
   const index = selectedSeats.value.findIndex(
@@ -38,15 +43,34 @@ const toggleSeatDebounced = debounce((row: number, seat: number) => {
 
   if (index > -1) {
     selectedSeats.value.splice(index, 1)
+    emit('update:selected', [...selectedSeats.value])
   } else {
+    if (props.isAuthenticated === false) {
+      showLoginModal.value = true
+      return
+    }
+
+    if (props.maxSeats && selectedSeats.value.length >= props.maxSeats) {
+      toast.add({
+        title: 'Достигнут лимит',
+        description: `Можно выбрать максимум ${props.maxSeats} мест`,
+        color: 'orange',
+        icon: 'i-lucide-alert-circle'
+      })
+      return
+    }
     selectedSeats.value.push({ rowNumber: row, seatNumber: seat })
+    emit('update:selected', [...selectedSeats.value])
   }
+}
 
-  emit('update:selected', [...selectedSeats.value])
-}, 100)
+const handleLogin = () => {
+  showLoginModal.value = false
+  emit('login-required')
+}
 
-const toggleSeat = (row: number, seat: number) => {
-  toggleSeatDebounced(row, seat)
+const handleCancel = () => {
+  showLoginModal.value = false
 }
 
 // Get seat key for refs
@@ -128,6 +152,7 @@ watch(() => props.bookedSeats, () => {
       </div>
 
       <div
+        data-testid="seat-grid"
         role="grid"
         aria-label="Схема зала"
         aria-describedby="seat-instructions"
@@ -205,5 +230,57 @@ watch(() => props.bookedSeats, () => {
     >
       Выбрано мест: <strong>{{ selectedSeats.length }}</strong>
     </div>
+
+    <!-- Login required modal -->
+    <UModal
+      v-model="showLoginModal"
+      aria-labelledby="login-modal-title"
+      aria-describedby="login-modal-description"
+      :ui="{ width: 'max-w-md' }"
+    >
+      <UCard>
+        <template #header>
+          <div class="flex items-center gap-3">
+            <UIcon
+              name="i-lucide-lock"
+              class="w-6 h-6 text-indigo-600"
+            />
+            <h2
+              id="login-modal-title"
+              class="text-xl font-bold text-gray-900"
+            >
+              Требуется авторизация
+            </h2>
+          </div>
+        </template>
+
+        <div
+          id="login-modal-description"
+          class="space-y-4"
+        >
+          <p class="text-gray-600">
+            Для бронирования билетов необходимо войти в систему.
+          </p>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton
+              color="gray"
+              variant="ghost"
+              @click="handleCancel"
+            >
+              Отмена
+            </UButton>
+            <UButton
+              color="primary"
+              @click="handleLogin"
+            >
+              Войти
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>

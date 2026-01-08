@@ -3,16 +3,20 @@ import { mount } from '@vue/test-utils'
 import RegisterForm from '~/features/auth/components/RegisterForm.vue'
 import { useAuth } from '~/features/auth/composables/useAuth'
 import { useErrorHandler } from '~/composables/useErrorHandler'
+import { ApiError } from '~/shared/api/client'
 
 vi.mock('~/features/auth/composables/useAuth')
 vi.mock('~/composables/useErrorHandler')
 
 describe('RegisterForm', () => {
-  const mockRegister = vi.fn()
-  const mockHandleError = vi.fn()
+  let mockRegister: ReturnType<typeof vi.fn>
+  let mockHandleError: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRegister = vi.fn()
+    mockHandleError = vi.fn()
+
     vi.mocked(useAuth).mockReturnValue({
       register: mockRegister,
       token: computed(() => null),
@@ -22,59 +26,125 @@ describe('RegisterForm', () => {
       login: vi.fn(),
       logout: vi.fn()
     } as ReturnType<typeof useAuth>)
+
     vi.mocked(useErrorHandler).mockReturnValue({
       handleError: mockHandleError
     })
   })
 
-  it('renders registration form', () => {
-    const wrapper = mount(RegisterForm)
-    expect(wrapper.find('form').exists()).toBe(true)
-    expect(wrapper.find('input[type="text"]').exists()).toBe(true)
-    expect(wrapper.findAll('input[type="password"]').length).toBe(2)
+  describe('rendering', () => {
+    it('renders registration form with all required fields', () => {
+      const wrapper = mount(RegisterForm)
+
+      expect(wrapper.find('[data-testid="register-form"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="username-input"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="password-input"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="password-confirmation-input"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="submit-button"]').exists()).toBe(true)
+    })
   })
 
-  it('validates password requirements', async () => {
-    const wrapper = mount(RegisterForm)
-    const usernameInput = wrapper.find('input[type="text"]')
-    const passwordInput = wrapper.findAll('input[type="password"]')[0]
+  describe('validation', () => {
+    context('when password does not meet requirements', () => {
+      it('validates password requirements', async () => {
+        const wrapper = mount(RegisterForm)
+        const usernameInput = wrapper.find('[data-testid="username-input"]')
+        const passwordInput = wrapper.find('[data-testid="password-input"]')
+        const form = wrapper.find('[data-testid="register-form"]')
 
-    await usernameInput.setValue('validusername')
-    await passwordInput.setValue('passwordwithoutuppercase1')
-    await wrapper.find('form').trigger('submit')
+        await usernameInput.setValue('validusername')
+        await passwordInput.setValue('passwordwithoutuppercase1')
+        await form.trigger('submit')
 
-    expect(mockRegister).not.toHaveBeenCalled()
+        expect(mockRegister).not.toHaveBeenCalled()
+      })
+    })
+
+    context('when password confirmation does not match', () => {
+      it('validates password confirmation match', async () => {
+        const wrapper = mount(RegisterForm)
+        const usernameInput = wrapper.find('[data-testid="username-input"]')
+        const passwordInput = wrapper.find('[data-testid="password-input"]')
+        const passwordConfirmationInput = wrapper.find('[data-testid="password-confirmation-input"]')
+        const form = wrapper.find('[data-testid="register-form"]')
+
+        await usernameInput.setValue('validusername')
+        await passwordInput.setValue('ValidPassword1')
+        await passwordConfirmationInput.setValue('ValidPassword2')
+        await form.trigger('submit')
+
+        expect(mockRegister).not.toHaveBeenCalled()
+      })
+    })
   })
 
-  it('validates password confirmation match', async () => {
-    const wrapper = mount(RegisterForm)
-    const usernameInput = wrapper.find('input[type="text"]')
-    const passwordInputs = wrapper.findAll('input[type="password"]')
+  describe('submission', () => {
+    context('with valid data', () => {
+      it('calls register with valid data', async () => {
+        mockRegister.mockResolvedValue({ token: 'test-token' })
 
-    await usernameInput.setValue('validusername')
-    await passwordInputs[0].setValue('ValidPassword1')
-    await passwordInputs[1].setValue('ValidPassword2')
-    await wrapper.find('form').trigger('submit')
+        const wrapper = mount(RegisterForm)
+        const usernameInput = wrapper.find('[data-testid="username-input"]')
+        const passwordInput = wrapper.find('[data-testid="password-input"]')
+        const passwordConfirmationInput = wrapper.find('[data-testid="password-confirmation-input"]')
+        const form = wrapper.find('[data-testid="register-form"]')
 
-    expect(mockRegister).not.toHaveBeenCalled()
-  })
+        await usernameInput.setValue('validusername')
+        await passwordInput.setValue('ValidPassword1')
+        await passwordConfirmationInput.setValue('ValidPassword1')
+        await form.trigger('submit')
 
-  it('calls register with valid data', async () => {
-    mockRegister.mockResolvedValue({ token: 'test-token' })
+        await wrapper.vm.$nextTick()
+        expect(mockRegister).toHaveBeenCalledTimes(1)
+        expect(mockRegister).toHaveBeenCalledWith({
+          username: 'validusername',
+          password: 'ValidPassword1',
+          passwordConfirmation: 'ValidPassword1'
+        })
+      })
+    })
 
-    const wrapper = mount(RegisterForm)
-    const usernameInput = wrapper.find('input[type="text"]')
-    const passwordInputs = wrapper.findAll('input[type="password"]')
+    context('with invalid data', () => {
+      it('handles registration error', async () => {
+        const error = new ApiError('Username already exists', 409)
+        mockRegister.mockRejectedValue(error)
 
-    await usernameInput.setValue('validusername')
-    await passwordInputs[0].setValue('ValidPassword1')
-    await passwordInputs[1].setValue('ValidPassword1')
-    await wrapper.find('form').trigger('submit')
+        const wrapper = mount(RegisterForm)
+        const usernameInput = wrapper.find('[data-testid="username-input"]')
+        const passwordInput = wrapper.find('[data-testid="password-input"]')
+        const passwordConfirmationInput = wrapper.find('[data-testid="password-confirmation-input"]')
+        const form = wrapper.find('[data-testid="register-form"]')
 
-    await wrapper.vm.$nextTick()
-    expect(mockRegister).toHaveBeenCalledWith({
-      username: 'validusername',
-      password: 'ValidPassword1'
+        await usernameInput.setValue('validusername')
+        await passwordInput.setValue('ValidPassword1')
+        await passwordConfirmationInput.setValue('ValidPassword1')
+        await form.trigger('submit')
+
+        await wrapper.vm.$nextTick()
+        expect(mockRegister).toHaveBeenCalledTimes(1)
+        expect(mockHandleError).toHaveBeenCalledTimes(1)
+        expect(mockHandleError).toHaveBeenCalledWith(error)
+      })
+
+      it('handles network errors', async () => {
+        const error = new Error('Network error')
+        mockRegister.mockRejectedValue(error)
+
+        const wrapper = mount(RegisterForm)
+        const usernameInput = wrapper.find('[data-testid="username-input"]')
+        const passwordInput = wrapper.find('[data-testid="password-input"]')
+        const passwordConfirmationInput = wrapper.find('[data-testid="password-confirmation-input"]')
+        const form = wrapper.find('[data-testid="register-form"]')
+
+        await usernameInput.setValue('validusername')
+        await passwordInput.setValue('ValidPassword1')
+        await passwordConfirmationInput.setValue('ValidPassword1')
+        await form.trigger('submit')
+
+        await wrapper.vm.$nextTick()
+        expect(mockHandleError).toHaveBeenCalledTimes(1)
+        expect(mockHandleError).toHaveBeenCalledWith(error)
+      })
     })
   })
 })

@@ -6,7 +6,7 @@ import { logger } from '../../lib/logger'
 export const moviesRepository = {
   async getAll(signal?: AbortSignal): Promise<Movie[]> {
     const client = useApiClient()
-    const response = await client.get<unknown>('/movies', { signal })
+    const response = await client.get('/movies', { signal })
 
     const result = z.array(MovieSchema).safeParse(response)
     if (!result.success) {
@@ -19,11 +19,11 @@ export const moviesRepository = {
 
   async getSessions(movieId: number, signal?: AbortSignal): Promise<MovieSession[]> {
     const client = useApiClient()
-    const response = await client.get<unknown>(`/movies/${movieId}/sessions`, { signal })
+    const response = await client.get(`/movies/${movieId}/sessions`, { signal })
 
     const result = z.array(MovieSessionSchema).safeParse(response)
     if (!result.success) {
-      console.error('Movie sessions response validation failed:', result.error)
+      logger.error('Movie sessions response validation failed:', result.error)
       throw new ApiError('Invalid movie sessions response', 500)
     }
 

@@ -16,6 +16,10 @@ vi.mock('~/features/sessions/composables/useSessions', () => ({
   useSessionsBatch: () => ({ data: { value: [] } })
 }))
 
+vi.mock('~/shared/lib/useDebounce', () => ({
+  debounce: (fn: (...args: never[]) => void) => fn
+}))
+
 describe('Booking Flow Integration', () => {
   const seatsInfo: SeatsInfo = {
     rows: 3,
@@ -33,6 +37,11 @@ describe('Booking Flow Integration', () => {
       props: {
         seatsInfo,
         bookedSeats
+      },
+      global: {
+        stubs: {
+          SeatLegend: true
+        }
       }
     })
 
@@ -78,6 +87,11 @@ describe('Booking Flow Integration', () => {
       props: {
         seatsInfo,
         bookedSeats
+      },
+      global: {
+        stubs: {
+          SeatLegend: true
+        }
       }
     })
 

@@ -10,6 +10,7 @@ defineProps<{
   <NuxtLink
     :to="`/cinemas/${cinema.id}`"
     class="block group"
+    :data-testid="`cinema-link-${cinema.id}`"
   >
     <UCard class="transition-shadow hover:shadow-lg h-full">
       <div class="flex items-start gap-4">

@@ -1,5 +1,6 @@
 interface JWTPayload {
   sub?: number
+  id?: number
   exp?: number
   iat?: number
   [key: string]: unknown
@@ -20,16 +21,18 @@ export function decodeJWT(token: string): DecodedToken | null {
 
     const payload = JSON.parse(atob(parts[1])) as JWTPayload
 
-    if (!payload.sub) {
-      return null
-    }
-
     if (payload.exp && payload.exp * 1000 < Date.now()) {
       return null
     }
 
+    const userId = payload.sub ?? payload.id
+
+    if (!userId) {
+      return null
+    }
+
     return {
-      id: payload.sub,
+      id: userId,
       exp: payload.exp
     }
   } catch {

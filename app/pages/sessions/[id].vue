@@ -79,8 +79,10 @@ const openConfirmation = () => {
   showConfirmation.value = true
 }
 
-// Confirm booking
 const confirmBooking = () => {
+  if (isBooking.value || selectedSeats.value.length === 0) {
+    return
+  }
   book(selectedSeats.value, {
     onSuccess: () => {
       showConfirmation.value = false
@@ -158,7 +160,9 @@ const cancelConfirmation = () => {
             :seats-info="session.seats"
             :booked-seats="session.bookedSeats"
             :disabled="isBooking || !isAuthenticated"
+            :is-authenticated="isAuthenticated"
             @update:selected="handleSeatsUpdate"
+            @login-required="openConfirmation"
           />
         </UCard>
 
