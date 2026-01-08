@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Seat } from '~/shared/schemas'
+import { useFocusTrap } from '~/shared/composables/useFocusTrap'
 
-defineProps<{
+const props = defineProps<{
   seats: Seat[]
   movieTitle: string
   cinemaName: string
@@ -14,16 +15,36 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+const containerRef = ref<HTMLElement | null>(null)
+
+useFocusTrap(containerRef, () => {
+  emit('cancel')
+})
+
 const formatSeats = (seats: Seat[]): string => {
   return seats
     .sort((a, b) => a.rowNumber - b.rowNumber || a.seatNumber - b.seatNumber)
     .map(s => `Ряд ${s.rowNumber}, место ${s.seatNumber}`)
     .join('\n')
 }
+
+const announcement = computed(() => {
+  if (props.loading) {
+    return 'Обработка бронирования...'
+  }
+  return `Подтверждение бронирования: ${props.movieTitle}, ${props.cinemaName}, ${props.seats.length} мест`
+})
 </script>
 
 <template>
-  <UCard>
+  <UCard ref="containerRef">
+    <div
+      aria-live="polite"
+      aria-atomic="true"
+      class="sr-only"
+    >
+      {{ announcement }}
+    </div>
     <template #header>
       <h3
         id="booking-modal-title"

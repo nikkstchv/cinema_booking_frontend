@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import type { Booking, Movie, Cinema, MovieSession } from '~/shared/schemas'
+import type { Booking } from '~/shared/schemas'
 import TicketCard from './TicketCard.vue'
+import { useBookingData } from '../composables/useBookingData'
 
 const props = defineProps<{
   bookings: Booking[]
-  movies: Movie[]
-  cinemas: Cinema[]
-  sessions: MovieSession[]
   paymentTimeoutSeconds: number
   loading?: boolean
   payingBookingId?: string | null
@@ -16,6 +14,8 @@ const emit = defineEmits<{
   pay: [bookingId: string]
   expired: []
 }>()
+
+const { getMovie, getCinema, getSession } = useBookingData(computed(() => props.bookings))
 
 type BookingCategory = 'unpaid' | 'future' | 'past'
 
@@ -65,20 +65,6 @@ const categoryLabels: Record<BookingCategory, string> = {
   unpaid: 'Неоплаченные',
   future: 'Будущие',
   past: 'Прошедшие'
-}
-
-const getMovie = (booking: Booking): Movie | undefined => {
-  const session = props.sessions.find(s => s.id === booking.movieSessionId)
-  return props.movies.find(m => m.id === session?.movieId)
-}
-
-const getCinema = (booking: Booking): Cinema | undefined => {
-  const session = props.sessions.find(s => s.id === booking.movieSessionId)
-  return props.cinemas.find(c => c.id === session?.cinemaId)
-}
-
-const getSession = (booking: Booking): MovieSession | undefined => {
-  return props.sessions.find(s => s.id === booking.movieSessionId)
 }
 </script>
 

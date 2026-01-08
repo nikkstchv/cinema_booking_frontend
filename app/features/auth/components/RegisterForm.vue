@@ -23,7 +23,8 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
   try {
     await register({
       username: event.data.username,
-      password: event.data.password
+      password: event.data.password,
+      passwordConfirmation: event.data.passwordConfirmation
     })
 
     toast.add({

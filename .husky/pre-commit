@@ -1,5 +1,11 @@
-# Run lint-staged for linting changed files
-npx lint-staged
+#!/bin/sh
 
-# Run typecheck for the entire project
-npm run typecheck
+# Run lint-staged for linting changed files
+if git diff --cached --name-only --diff-filter=ACM | grep -qE '\.(ts|vue|js|mjs)$'; then
+  npx lint-staged || exit 1
+fi
+
+# Run typecheck only if TypeScript/Vue files are changed
+if git diff --cached --name-only --diff-filter=ACM | grep -qE '\.(ts|vue)$'; then
+  npm run typecheck || exit 1
+fi

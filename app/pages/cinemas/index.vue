@@ -2,14 +2,7 @@
 import CinemaList from '~/features/cinemas/components/CinemaList.vue'
 import { useCinemas } from '~/features/cinemas/composables/useCinemas'
 
-const config = useRuntimeConfig()
-
-const baseUrl = computed(() => {
-  if (import.meta.client) {
-    return window.location.origin
-  }
-  return config.public.apiBase.replace('/api', '') || 'http://localhost:3000'
-})
+const baseUrl = useBaseUrl()
 
 useHead({
   title: 'Кинотеатры - CinemaBook',
@@ -26,7 +19,7 @@ useHead({
   ]
 })
 
-const { data: cinemas, isLoading, error } = useCinemas() as { data: Ref<import('~/shared/schemas').Cinema[] | undefined>, isLoading: Ref<boolean>, error: Ref<Error | null> }
+const { data: cinemas, isLoading, error } = useCinemas()
 const { handleError } = useErrorHandler()
 
 // Handle query errors

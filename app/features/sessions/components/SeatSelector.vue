@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Seat, SeatsInfo } from '~/shared/schemas'
+import { debounce } from '~/shared/lib/useDebounce'
 import SeatLegend from './SeatLegend.vue'
 
 const props = defineProps<{
@@ -12,28 +13,23 @@ const emit = defineEmits<{
   'update:selected': [seats: Seat[]]
 }>()
 
-// Selected seats state
 const selectedSeats = ref<Seat[]>([])
 
-// Refs for focus management
 const seatRefs = ref<Map<string, HTMLButtonElement>>(new Map())
 
-// Check if a seat is booked
 const isBooked = (row: number, seat: number): boolean => {
   return props.bookedSeats.some(
     s => s.rowNumber === row && s.seatNumber === seat
   )
 }
 
-// Check if a seat is selected
 const isSelected = (row: number, seat: number): boolean => {
   return selectedSeats.value.some(
     s => s.rowNumber === row && s.seatNumber === seat
   )
 }
 
-// Toggle seat selection
-const toggleSeat = (row: number, seat: number) => {
+const toggleSeatDebounced = debounce((row: number, seat: number) => {
   if (props.disabled || isBooked(row, seat)) return
 
   const index = selectedSeats.value.findIndex(
@@ -47,6 +43,10 @@ const toggleSeat = (row: number, seat: number) => {
   }
 
   emit('update:selected', [...selectedSeats.value])
+}, 100)
+
+const toggleSeat = (row: number, seat: number) => {
+  toggleSeatDebounced(row, seat)
 }
 
 // Get seat key for refs
@@ -133,64 +133,64 @@ watch(() => props.bookedSeats, () => {
         aria-describedby="seat-instructions"
         class="flex flex-col gap-2 min-w-max mx-auto"
       >
-      <p
-        id="seat-instructions"
-        class="sr-only"
-      >
-        Используйте стрелки для навигации, Enter или пробел для выбора места
-      </p>
+        <p
+          id="seat-instructions"
+          class="sr-only"
+        >
+          Используйте стрелки для навигации, Enter или пробел для выбора места
+        </p>
 
-      <div class="flex items-center gap-2">
-        <div class="w-8 flex-shrink-0" />
-        <div class="flex gap-2">
-          <div
-            v-for="seat in seats"
-            :key="seat"
-            class="w-6 h-6 flex items-center justify-center text-xs text-gray-500 font-medium"
-          >
-            {{ seat }}
+        <div class="flex items-center gap-2">
+          <div class="w-8 flex-shrink-0" />
+          <div class="flex gap-2">
+            <div
+              v-for="seat in seats"
+              :key="seat"
+              class="w-6 h-6 flex items-center justify-center text-xs text-gray-500 font-medium"
+            >
+              {{ seat }}
+            </div>
+          </div>
+          <div class="w-8 flex-shrink-0" />
+        </div>
+
+        <div
+          v-for="row in rows"
+          :key="row"
+          role="row"
+          class="flex items-center gap-2"
+        >
+          <!-- Row number -->
+          <div class="w-8 flex-shrink-0 text-right text-sm text-gray-500 font-medium">
+            {{ row }}
+          </div>
+
+          <!-- Seats -->
+          <div class="flex gap-2">
+            <button
+              v-for="seat in seats"
+              :key="seat"
+              :ref="(el) => { if (el) seatRefs.set(getSeatKey(row, seat), el as HTMLButtonElement) }"
+              role="gridcell"
+              :aria-label="`Ряд ${row}, место ${seat}`"
+              :aria-pressed="isSelected(row, seat)"
+              :aria-disabled="isBooked(row, seat) || disabled"
+              :disabled="isBooked(row, seat) || disabled"
+              :class="getSeatClasses(row, seat)"
+              @click="toggleSeat(row, seat)"
+              @keydown="handleKeydown($event, row, seat)"
+            >
+              <span class="sr-only">
+                {{ isBooked(row, seat) ? 'Занято' : isSelected(row, seat) ? 'Выбрано' : 'Свободно' }}
+              </span>
+            </button>
+          </div>
+
+          <!-- Row number (right side) -->
+          <div class="w-8 flex-shrink-0 text-left text-sm text-gray-500 font-medium">
+            {{ row }}
           </div>
         </div>
-        <div class="w-8 flex-shrink-0" />
-      </div>
-
-      <div
-        v-for="row in rows"
-        :key="row"
-        role="row"
-        class="flex items-center gap-2"
-      >
-        <!-- Row number -->
-        <div class="w-8 flex-shrink-0 text-right text-sm text-gray-500 font-medium">
-          {{ row }}
-        </div>
-
-        <!-- Seats -->
-        <div class="flex gap-2">
-          <button
-            v-for="seat in seats"
-            :key="seat"
-            :ref="(el) => { if (el) seatRefs.set(getSeatKey(row, seat), el as HTMLButtonElement) }"
-            role="gridcell"
-            :aria-label="`Ряд ${row}, место ${seat}`"
-            :aria-pressed="isSelected(row, seat)"
-            :aria-disabled="isBooked(row, seat) || disabled"
-            :disabled="isBooked(row, seat) || disabled"
-            :class="getSeatClasses(row, seat)"
-            @click="toggleSeat(row, seat)"
-            @keydown="handleKeydown($event, row, seat)"
-          >
-            <span class="sr-only">
-              {{ isBooked(row, seat) ? 'Занято' : isSelected(row, seat) ? 'Выбрано' : 'Свободно' }}
-            </span>
-          </button>
-        </div>
-
-        <!-- Row number (right side) -->
-        <div class="w-8 flex-shrink-0 text-left text-sm text-gray-500 font-medium">
-          {{ row }}
-        </div>
-      </div>
       </div>
     </div>
 

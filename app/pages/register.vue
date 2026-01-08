@@ -5,14 +5,7 @@ definePageMeta({
   layout: 'auth'
 })
 
-const config = useRuntimeConfig()
-
-const baseUrl = computed(() => {
-  if (process.client) {
-    return window.location.origin
-  }
-  return config.public.apiBase.replace('/api', '') || 'http://localhost:3000'
-})
+const baseUrl = useBaseUrl()
 
 useHead({
   title: 'Регистрация - CinemaBook',

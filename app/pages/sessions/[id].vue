@@ -16,8 +16,8 @@ const sessionId = computed(() => Number(route.params.id))
 
 // Fetch data
 const { data: session, isLoading: sessionLoading, error: sessionError } = useSessionDetails(sessionId)
-const { data: movies } = useMovies() as { data: Ref<import('~/shared/schemas').Movie[] | undefined> }
-const { data: cinemas } = useCinemas() as { data: Ref<import('~/shared/schemas').Cinema[] | undefined> }
+const { data: movies } = useMovies()
+const { data: cinemas } = useCinemas()
 
 // Booking mutation (only for authenticated users)
 const { mutate: book, isPending: isBooking } = useBookSession(sessionId)
@@ -36,14 +36,7 @@ const cinema = computed(() => {
   return cinemas.value.find(c => c.id === session.value?.cinemaId)
 })
 
-const config = useRuntimeConfig()
-
-const baseUrl = computed(() => {
-  if (import.meta.client) {
-    return window.location.origin
-  }
-  return config.public.apiBase.replace('/api', '') || 'http://localhost:3000'
-})
+const baseUrl = useBaseUrl()
 
 const canonicalUrl = computed(() => `${baseUrl.value}/sessions/${sessionId.value}`)
 

@@ -11,9 +11,9 @@ const { handleError } = useErrorHandler()
 const movieId = computed(() => Number(route.params.id))
 
 // Fetch data
-const { data: movies, isLoading: moviesLoading, error: moviesError } = useMovies() as { data: Ref<import('~/shared/schemas').Movie[] | undefined>, isLoading: Ref<boolean>, error: Ref<Error | null> }
-const { data: sessions, isLoading: sessionsLoading, error: sessionsError } = useMovieSessions(movieId) as { data: Ref<import('~/shared/schemas').MovieSession[] | undefined>, isLoading: Ref<boolean>, error: Ref<Error | null> }
-const { data: cinemas, isLoading: cinemasLoading } = useCinemas() as { data: Ref<import('~/shared/schemas').Cinema[] | undefined>, isLoading: Ref<boolean> }
+const { data: movies, isLoading: moviesLoading, error: moviesError } = useMovies()
+const { data: sessions, isLoading: sessionsLoading, error: sessionsError } = useMovieSessions(movieId)
+const { data: cinemas, isLoading: cinemasLoading } = useCinemas()
 
 // Find current movie
 const movie = computed(() => {
@@ -21,12 +21,7 @@ const movie = computed(() => {
   return movies.value.find(m => m.id === movieId.value)
 })
 
-const baseUrl = computed(() => {
-  if (import.meta.client) {
-    return window.location.origin
-  }
-  return config.public.apiBase.replace('/api', '') || 'http://localhost:3000'
-})
+const baseUrl = useBaseUrl()
 
 const canonicalUrl = computed(() => `${baseUrl.value}/movies/${movieId.value}`)
 const ogImageUrl = computed(() => movie.value ? getFullPosterUrl(movie.value.posterImage, config.public.apiBase) : '')

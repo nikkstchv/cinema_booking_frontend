@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { useApiClient, ApiError } from '../client'
 import { CinemaSchema, MovieSessionSchema, type Cinema, type MovieSession } from '../../schemas'
+import { logger } from '../../lib/logger'
 
 export const cinemasRepository = {
   async getAll(signal?: AbortSignal): Promise<Cinema[]> {
@@ -9,7 +10,7 @@ export const cinemasRepository = {
 
     const result = z.array(CinemaSchema).safeParse(response)
     if (!result.success) {
-      console.error('Cinemas response validation failed:', result.error)
+      logger.error('Cinemas response validation failed:', result.error)
       throw new ApiError('Invalid cinemas response', 500)
     }
 

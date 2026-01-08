@@ -88,6 +88,16 @@ export const ApiErrorResponseSchema = z.object({
   error: z.string().optional()
 })
 
+// Booking response schema
+export const BookingResponseSchema = z.object({
+  bookingId: z.string()
+})
+
+// Payment response schema
+export const PaymentResponseSchema = z.object({
+  message: z.string()
+})
+
 // Infer types from schemas
 export type Movie = z.infer<typeof MovieSchema>
 export type Cinema = z.infer<typeof CinemaSchema>
@@ -99,4 +109,7 @@ export type Booking = z.infer<typeof BookingSchema>
 export type Settings = z.infer<typeof SettingsSchema>
 export type LoginRequest = z.infer<typeof LoginRequestSchema>
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>
+export type RegisterApiRequest = Omit<RegisterRequest, 'passwordConfirmation'>
 export type AuthResponse = z.infer<typeof AuthResponseSchema>
+export type BookingResponse = z.infer<typeof BookingResponseSchema>
+export type PaymentResponse = z.infer<typeof PaymentResponseSchema>

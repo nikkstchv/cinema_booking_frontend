@@ -1,5 +1,14 @@
 /**
  * API Client with AbortController support
+ *
+ * @class ApiClient
+ * @description Centralized API client for making HTTP requests with authentication and error handling
+ */
+
+/**
+ * Custom error class for API errors
+ * @class ApiError
+ * @extends Error
  */
 export class ApiError extends Error {
   constructor(
@@ -15,42 +24,113 @@ interface RequestOptions extends RequestInit {
   signal?: AbortSignal
 }
 
+/**
+ * API Client for making authenticated HTTP requests
+ */
 export class ApiClient {
   private baseUrl: string
   private getToken: () => string | null
 
+  /**
+   * Creates a new API client instance
+   * @param baseUrl - Base URL for API requests
+   * @param getToken - Function to get authentication token
+   */
   constructor(baseUrl: string, getToken: () => string | null) {
     this.baseUrl = baseUrl
     this.getToken = getToken
   }
 
+  /**
+   * Makes an HTTP request
+   * @param endpoint - API endpoint path
+   * @param options - Request options (method, body, headers, signal)
+   * @returns Promise resolving to response data
+   * @throws ApiError if request fails
+   */
   async request<T>(
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<T> {
     const token = this.getToken()
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers
+    let response: Response
+    try {
+      response = await fetch(`${this.baseUrl}${endpoint}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+          ...options.headers
+        }
+      })
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new ApiError('Не удалось подключиться к серверу. Проверьте подключение к интернету', 0)
       }
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Request failed' }))
-      throw new ApiError(error.message || 'Request failed', response.status)
+      throw error
     }
 
-    return response.json()
+    if (!response.ok) {
+      let errorMessage = 'Запрос не выполнен'
+      const contentType = response.headers.get('content-type')
+
+      if (contentType?.includes('application/json')) {
+        try {
+          const error = await response.json()
+          errorMessage = error.message || error.error || `Ошибка ${response.status}`
+        } catch {
+          errorMessage = `Ошибка ${response.status}: ${response.statusText}`
+        }
+      } else {
+        try {
+          const text = await response.text()
+          errorMessage = text || `Ошибка ${response.status}: ${response.statusText}`
+        } catch {
+          errorMessage = `Ошибка ${response.status}: ${response.statusText}`
+        }
+      }
+
+      throw new ApiError(errorMessage, response.status)
+    }
+
+    const contentType = response.headers.get('content-type')
+    if (!contentType?.includes('application/json')) {
+      const text = await response.text()
+      if (text) {
+        try {
+          return JSON.parse(text) as T
+        } catch {
+          throw new ApiError('Сервер вернул неверный формат данных', response.status)
+        }
+      }
+      return null as T
+    }
+
+    try {
+      return await response.json()
+    } catch {
+      throw new ApiError('Не удалось обработать ответ сервера', response.status)
+    }
   }
 
+  /**
+   * Makes a GET request
+   * @param endpoint - API endpoint path
+   * @param options - Request options with optional AbortSignal
+   * @returns Promise resolving to response data
+   */
   get<T>(endpoint: string, options?: { signal?: AbortSignal }): Promise<T> {
     return this.request<T>(endpoint, { method: 'GET', ...options })
   }
 
+  /**
+   * Makes a POST request
+   * @param endpoint - API endpoint path
+   * @param data - Request body data
+   * @param options - Request options with optional AbortSignal
+   * @returns Promise resolving to response data
+   */
   post<T>(endpoint: string, data: unknown, options?: { signal?: AbortSignal }): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'POST',

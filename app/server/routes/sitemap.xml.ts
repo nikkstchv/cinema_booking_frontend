@@ -1,3 +1,5 @@
+import { logger } from '~/shared/lib/logger'
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const baseUrl = config.public.apiBase || 'http://localhost:3022'
@@ -24,7 +26,7 @@ export default defineEventHandler(async (event) => {
       routes.push(...cinemas.map((c: { id: number }) => `${siteUrl}/cinemas/${c.id}`))
     }
   } catch (error) {
-    console.error('Error fetching sitemap routes:', error)
+    logger.error('Error fetching sitemap routes:', error)
   }
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -39,4 +41,3 @@ ${routes.map(url => `  <url>
   event.node.res.setHeader('Content-Type', 'application/xml')
   return sitemap
 })
-

@@ -19,7 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const formatSeats = (booking: Booking): string => {
-  return booking.seats
+  return [...booking.seats]
     .sort((a, b) => a.rowNumber - b.rowNumber || a.seatNumber - b.seatNumber)
     .map(s => `Р${s.rowNumber}М${s.seatNumber}`)
     .join(', ')

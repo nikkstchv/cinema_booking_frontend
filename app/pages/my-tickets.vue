@@ -1,24 +1,13 @@
 <script setup lang="ts">
 import TicketsList from '~/features/bookings/components/TicketsList.vue'
 import { useMyBookings, useSettings, usePayBooking } from '~/features/bookings/composables/useBookings'
-import { useMovies } from '~/features/movies/composables/useMovies'
-import { useCinemas } from '~/features/cinemas/composables/useCinemas'
 import { DEFAULT_PAYMENT_TIMEOUT_SECONDS } from '~/shared/lib/constants'
-import { sessionsRepository } from '~/shared/api/repositories'
-import type { MovieSession } from '~/shared/schemas'
 
 definePageMeta({
   middleware: 'auth'
 })
 
-const config = useRuntimeConfig()
-
-const baseUrl = computed(() => {
-  if (import.meta.client) {
-    return window.location.origin
-  }
-  return config.public.apiBase.replace('/api', '') || 'http://localhost:3000'
-})
+const baseUrl = useBaseUrl()
 
 useHead({
   title: 'Мои билеты - CinemaBook',
@@ -33,91 +22,92 @@ useHead({
 
 const { handleError } = useErrorHandler()
 
-// Fetch data
 const { data: bookings, isLoading: bookingsLoading, error: bookingsError, refetch: refetchBookings } = useMyBookings()
-const { data: movies } = useMovies() as { data: Ref<import('~/shared/schemas').Movie[] | undefined> }
-const { data: cinemas } = useCinemas() as { data: Ref<import('~/shared/schemas').Cinema[] | undefined> }
 const { data: settings } = useSettings()
-
-// Payment mutation
 const { mutate: pay, isPending: isPaying, variables: payingVariables } = usePayBooking()
 
-// Payment timeout from settings
 const paymentTimeoutSeconds = computed(() =>
   settings.value?.bookingPaymentTimeSeconds ?? DEFAULT_PAYMENT_TIMEOUT_SECONDS
 )
 
-// Fetch sessions for bookings
-const sessions = ref<MovieSession[]>([])
-const sessionsLoading = ref(false)
-
-// Load sessions when bookings are available
-watch(bookings, async (newBookings) => {
-  if (!newBookings?.length) {
-    sessions.value = []
-    return
-  }
-
-  // Get unique session IDs
-  const sessionIds = [...new Set(newBookings.map(b => b.movieSessionId))]
-
-  sessionsLoading.value = true
-  try {
-    // Fetch all sessions in parallel
-    const sessionDetails = await Promise.all(
-      sessionIds.map(id => sessionsRepository.getById(id))
-    )
-
-    // Convert MovieSessionDetails to MovieSession (without bookedSeats)
-    sessions.value = sessionDetails.map(s => ({
-      id: s.id,
-      movieId: s.movieId,
-      cinemaId: s.cinemaId,
-      startTime: s.startTime
-    }))
-  } catch (err) {
-    handleError(err)
-  } finally {
-    sessionsLoading.value = false
-  }
-}, { immediate: true })
-
-// Handle errors
 watch(bookingsError, (err) => {
   if (err) handleError(err)
 })
 
-// Handle payment
 const handlePay = (bookingId: string) => {
   pay(bookingId)
 }
 
-// Handle expired timer - refetch bookings
 const handleExpired = () => {
   refetchBookings()
 }
 
-// Currently paying booking ID
+const checkExpiredBookings = () => {
+  if (!bookings.value || !settings.value) return
+
+  const now = Date.now()
+  const timeoutMs = paymentTimeoutSeconds.value * 1000
+
+  const hasExpired = bookings.value.some((booking) => {
+    if (booking.isPaid) return false
+    const bookedTime = new Date(booking.bookedAt).getTime()
+    return now - bookedTime > timeoutMs
+  })
+
+  if (hasExpired) {
+    refetchBookings()
+  }
+}
+
+onMounted(() => {
+  checkExpiredBookings()
+})
+
+if (import.meta.client) {
+  window.addEventListener('focus', checkExpiredBookings)
+  onUnmounted(() => {
+    window.removeEventListener('focus', checkExpiredBookings)
+  })
+}
+
 const payingBookingId = computed(() =>
   isPaying.value ? payingVariables.value : null
 )
 
-const isLoading = computed(() => bookingsLoading.value || sessionsLoading.value)
+const announcement = ref('')
+
+watch([bookings, isPaying], ([bookingsVal, paying]) => {
+  if (paying) {
+    announcement.value = 'Идет обработка оплаты...'
+  } else if (bookingsVal && bookingsVal.length > 0) {
+    const unpaidCount = bookingsVal.filter(b => !b.isPaid).length
+    if (unpaidCount > 0) {
+      announcement.value = `У вас ${unpaidCount} неоплаченных билетов`
+    } else {
+      announcement.value = 'Все билеты оплачены'
+    }
+  }
+}, { immediate: true })
 </script>
 
 <template>
   <div>
+    <div
+      aria-live="polite"
+      aria-atomic="true"
+      class="sr-only"
+    >
+      {{ announcement }}
+    </div>
+
     <h1 class="text-3xl font-bold text-gray-900 mb-8">
       Мои билеты
     </h1>
 
     <TicketsList
       :bookings="bookings ?? []"
-      :movies="movies ?? []"
-      :cinemas="cinemas ?? []"
-      :sessions="sessions"
       :payment-timeout-seconds="paymentTimeoutSeconds"
-      :loading="isLoading"
+      :loading="bookingsLoading"
       :paying-booking-id="payingBookingId"
       @pay="handlePay"
       @expired="handleExpired"

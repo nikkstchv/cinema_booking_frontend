@@ -21,9 +21,9 @@ vi.mock('#app', () => ({
   useToast: vi.fn(() => ({
     add: vi.fn()
   })),
-  createError: vi.fn((options: any) => {
+  createError: vi.fn((options: { message: string, statusCode?: number }) => {
     const error = new Error(options.message)
-    ;(error as any).statusCode = options.statusCode
+    ;(error as Error & { statusCode?: number }).statusCode = options.statusCode
     return error
   })
 }))

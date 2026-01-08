@@ -1,8 +1,8 @@
 import { onCLS, onINP, onLCP, onTTFB } from 'web-vitals'
 
 export default defineNuxtPlugin(() => {
-  if (process.client) {
-    const reportMetric = (metric: any) => {
+  if (import.meta.client) {
+    const reportMetric = (metric: { name: string, value: number, rating: string, delta: number }) => {
       if (process.env.NODE_ENV === 'development') {
         console.log('[Web Vitals]', metric.name, {
           value: metric.value,
@@ -23,4 +23,3 @@ export default defineNuxtPlugin(() => {
     onTTFB(reportMetric)
   }
 })
-

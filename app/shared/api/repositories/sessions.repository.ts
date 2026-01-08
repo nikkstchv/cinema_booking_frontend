@@ -1,9 +1,6 @@
 import { useApiClient, ApiError } from '../client'
-import { MovieSessionDetailsSchema, type MovieSessionDetails, type Seat } from '../../schemas'
-
-interface BookingResponse {
-  bookingId: string
-}
+import { MovieSessionDetailsSchema, BookingResponseSchema, type MovieSessionDetails, type Seat, type BookingResponse } from '../../schemas'
+import { logger } from '../../lib/logger'
 
 export const sessionsRepository = {
   async getById(sessionId: number, signal?: AbortSignal): Promise<MovieSessionDetails> {
@@ -12,7 +9,7 @@ export const sessionsRepository = {
 
     const result = MovieSessionDetailsSchema.safeParse(response)
     if (!result.success) {
-      console.error('Session details response validation failed:', result.error)
+      logger.error('Session details response validation failed:', result.error)
       throw new ApiError('Invalid session details response', 500)
     }
 
@@ -21,12 +18,18 @@ export const sessionsRepository = {
 
   async book(sessionId: number, seats: Seat[], signal?: AbortSignal): Promise<BookingResponse> {
     const client = useApiClient()
-    const response = await client.post<BookingResponse>(
+    const response = await client.post<unknown>(
       `/movieSessions/${sessionId}/bookings`,
       { seats },
       { signal }
     )
 
-    return response
+    const result = BookingResponseSchema.safeParse(response)
+    if (!result.success) {
+      logger.error('Booking response validation failed:', result.error)
+      throw new ApiError('Invalid booking response', 500)
+    }
+
+    return result.data
   }
 }
