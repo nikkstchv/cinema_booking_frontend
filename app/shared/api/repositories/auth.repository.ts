@@ -5,12 +5,13 @@ import { logger } from '../../lib/logger'
 export const authRepository = {
   async login(credentials: LoginRequest, signal?: AbortSignal): Promise<AuthResponse> {
     const client = useApiClient()
-    const response = await client.post<unknown>('/login', credentials, { signal })
+    const response = await client.post('/login', credentials, { signal })
 
     const result = AuthResponseSchema.safeParse(response)
     if (!result.success) {
+      const errorDetails = result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
       logger.error('Auth response validation failed:', result.error)
-      throw new ApiError('Invalid auth response', 500)
+      throw new ApiError(`Неверный формат ответа сервера при авторизации: ${errorDetails}`, 500)
     }
 
     return result.data
@@ -22,12 +23,13 @@ export const authRepository = {
       username: credentials.username,
       password: credentials.password
     }
-    const response = await client.post<unknown>('/register', apiRequest, { signal })
+    const response = await client.post('/register', apiRequest, { signal })
 
     const result = AuthResponseSchema.safeParse(response)
     if (!result.success) {
+      const errorDetails = result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
       logger.error('Auth response validation failed:', result.error)
-      throw new ApiError('Invalid auth response', 500)
+      throw new ApiError(`Неверный формат ответа сервера при регистрации: ${errorDetails}`, 500)
     }
 
     return result.data

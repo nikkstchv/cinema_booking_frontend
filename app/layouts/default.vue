@@ -17,12 +17,10 @@ const confirmLogout = () => {
 const navigation = computed(() => {
   const items = [...NAV_ITEMS]
 
-  // Add auth-dependent items
   if (isAuthenticated.value) {
     return items
   }
 
-  // Remove "My tickets" for unauthenticated users
   return items.filter(item => item.to !== '/my-tickets')
 })
 </script>
@@ -54,24 +52,48 @@ const navigation = computed(() => {
         </div>
 
         <nav class="p-4">
-          <ul class="space-y-1">
-            <li
-              v-for="item in navigation"
-              :key="item.to"
+          <ClientOnly>
+            <ul
+              class="space-y-1"
             >
-              <NuxtLink
-                :to="item.to"
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-                active-class="bg-indigo-50 text-indigo-700 font-medium"
+              <li
+                v-for="item in navigation"
+                :key="item.to"
               >
-                <UIcon
-                  :name="item.icon"
-                  class="w-5 h-5"
-                />
-                {{ item.label }}
-              </NuxtLink>
-            </li>
-          </ul>
+                <NuxtLink
+                  :to="item.to"
+                  class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                  active-class="bg-indigo-50 text-indigo-700 font-medium"
+                >
+                  <UIcon
+                    :name="item.icon"
+                    class="w-5 h-5"
+                  />
+                  {{ item.label }}
+                </NuxtLink>
+              </li>
+            </ul>
+            <template #fallback>
+              <ul class="space-y-1">
+                <li
+                  v-for="item in NAV_ITEMS.filter(item => item.to !== '/my-tickets')"
+                  :key="item.to"
+                >
+                  <NuxtLink
+                    :to="item.to"
+                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                    active-class="bg-indigo-50 text-indigo-700 font-medium"
+                  >
+                    <UIcon
+                      :name="item.icon"
+                      class="w-5 h-5"
+                    />
+                    {{ item.label }}
+                  </NuxtLink>
+                </li>
+              </ul>
+            </template>
+          </ClientOnly>
 
           <div class="mt-8 pt-4 border-t border-gray-200">
             <ClientOnly>

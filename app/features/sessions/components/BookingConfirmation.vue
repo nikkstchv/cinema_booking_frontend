@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Seat } from '~/shared/schemas'
-import { useFocusTrap } from '~/shared/composables/useFocusTrap'
 
 const props = defineProps<{
   seats: Seat[]
@@ -14,12 +13,6 @@ const emit = defineEmits<{
   confirm: []
   cancel: []
 }>()
-
-const containerRef = ref<HTMLElement | null>(null)
-
-useFocusTrap(containerRef, () => {
-  emit('cancel')
-})
 
 const formatSeats = (seats: Seat[]): string => {
   return seats
@@ -37,7 +30,7 @@ const announcement = computed(() => {
 </script>
 
 <template>
-  <UCard ref="containerRef">
+  <UCard>
     <div
       aria-live="polite"
       aria-atomic="true"

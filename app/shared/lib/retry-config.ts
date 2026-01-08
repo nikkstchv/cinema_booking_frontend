@@ -1,17 +1,9 @@
 import { ApiError } from '~/shared/api/client'
 
 export const RETRY_CONFIG = {
-  default: {
-    retries: 3,
-    retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 10000)
-  },
   critical: {
     retries: 5,
     retryDelay: (attempt: number) => Math.min(500 * 2 ** attempt, 5000)
-  },
-  nonCritical: {
-    retries: 1,
-    retryDelay: () => 1000
   }
 } as const
 

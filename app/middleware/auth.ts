@@ -1,10 +1,9 @@
-/**
- * Auth middleware - protects routes that require authentication
- */
-export default defineNuxtRouteMiddleware((to) => {
-  const token = useCookie('auth_token')
+import { useAuth } from '~/features/auth/composables/useAuth'
 
-  if (!token.value) {
+export default defineNuxtRouteMiddleware((to) => {
+  const { isAuthenticated } = useAuth()
+
+  if (!isAuthenticated.value) {
     return navigateTo({
       path: '/login',
       query: {

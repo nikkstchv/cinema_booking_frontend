@@ -11,6 +11,7 @@ export function useMovies() {
     queryFn: ({ signal }) => moviesRepository.getAll(signal),
     select: movies => movies.sort((a, b) => b.rating - a.rating),
     staleTime: 1000 * 60 * 5,
+    gcTime: 10 * 60 * 1000,
     placeholderData: previousData => previousData
   })
 }
@@ -26,6 +27,7 @@ export function useMovieSessions(movieId: number | Ref<number>) {
     queryFn: ({ signal }) => moviesRepository.getSessions(id.value, signal),
     enabled: computed(() => id.value > 0),
     staleTime: 1000 * 30,
+    gcTime: 5 * 60 * 1000,
     placeholderData: previousData => previousData
   })
 }

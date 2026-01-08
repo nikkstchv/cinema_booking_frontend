@@ -79,8 +79,10 @@ const openConfirmation = () => {
   showConfirmation.value = true
 }
 
-// Confirm booking
 const confirmBooking = () => {
+  if (isBooking.value || selectedSeats.value.length === 0) {
+    return
+  }
   book(selectedSeats.value, {
     onSuccess: () => {
       showConfirmation.value = false
@@ -94,6 +96,10 @@ const confirmBooking = () => {
 const cancelConfirmation = () => {
   showConfirmation.value = false
 }
+
+const buttonDisabled = computed(() => {
+  return isAuthenticated.value && selectedSeats.value.length === 0
+})
 </script>
 
 <template>
@@ -158,7 +164,9 @@ const cancelConfirmation = () => {
             :seats-info="session.seats"
             :booked-seats="session.bookedSeats"
             :disabled="isBooking || !isAuthenticated"
+            :is-authenticated="isAuthenticated"
             @update:selected="handleSeatsUpdate"
+            @login-required="openConfirmation"
           />
         </UCard>
 
@@ -166,7 +174,7 @@ const cancelConfirmation = () => {
         <div class="text-center">
           <UButton
             size="lg"
-            :disabled="!isAuthenticated || (isAuthenticated && selectedSeats.length === 0)"
+            :disabled="buttonDisabled"
             @click="openConfirmation"
           >
             <UIcon

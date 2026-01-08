@@ -1,5 +1,6 @@
 import { ApiError } from '~/shared/api/client'
 import { useAuth } from '~/features/auth/composables/useAuth'
+import { useOnlineStatus } from './useOnlineStatus'
 
 interface ErrorMessage {
   title: string
@@ -8,80 +9,82 @@ interface ErrorMessage {
   action?: string
 }
 
-/**
- * Gets error message configuration for client errors (4xx)
- */
+const getNormalizedMessage = (message: string, fallback: string): string => {
+  return message?.trim() || fallback
+}
+
 const getClientErrorMessage = (status: number, message: string): ErrorMessage => {
   switch (status) {
     case 400:
       return {
         title: 'Ошибка валидации',
-        description: message || 'Проверьте правильность введенных данных',
+        description: getNormalizedMessage(message, 'Проверьте правильность введенных данных'),
         icon: 'i-lucide-alert-circle',
         action: 'Проверьте форму и попробуйте снова'
       }
     case 401:
       return {
         title: 'Ошибка авторизации',
-        description: message || 'Неверное имя пользователя или пароль',
+        description: getNormalizedMessage(message, 'Неверное имя пользователя или пароль'),
         icon: 'i-lucide-lock',
         action: 'Проверьте данные и попробуйте войти снова'
       }
     case 403:
       return {
         title: 'Доступ запрещен',
-        description: message || 'У вас нет прав для выполнения этого действия',
+        description: getNormalizedMessage(message, 'Доступ запрещен'),
         icon: 'i-lucide-shield-alert',
         action: 'Обратитесь к администратору'
       }
     case 404:
       return {
         title: 'Не найдено',
-        description: message || 'Запрашиваемый ресурс не найден',
+        description: getNormalizedMessage(message, 'Запрашиваемый ресурс не найден'),
         icon: 'i-lucide-search-x',
         action: 'Вернитесь на главную страницу'
       }
     case 409:
-      if (message.includes('уже существует') || message.includes('уже забронированы') || message.includes('уже оплачено')) {
-        return {
-          title: 'Конфликт',
-          description: message,
-          icon: 'i-lucide-alert-triangle',
-          action: 'Обновите страницу и попробуйте снова'
-        }
-      }
       return {
         title: 'Конфликт',
-        description: message || 'Произошел конфликт при выполнении операции',
+        description: getNormalizedMessage(message, 'Произошел конфликт при выполнении операции'),
         icon: 'i-lucide-alert-triangle',
         action: 'Обновите страницу и попробуйте снова'
+      }
+    case 422:
+      return {
+        title: 'Ошибка валидации',
+        description: getNormalizedMessage(message, 'Данные не прошли валидацию'),
+        icon: 'i-lucide-alert-circle',
+        action: 'Проверьте форму и попробуйте снова'
       }
     default:
       return {
         title: 'Ошибка',
-        description: message || 'Что-то пошло не так',
+        description: getNormalizedMessage(message, 'Что-то пошло не так'),
         icon: 'i-lucide-x-circle',
         action: 'Обновите страницу'
       }
   }
 }
 
-/**
- * Gets error message configuration for server errors (5xx)
- */
 const getServerErrorMessage = (message: string): ErrorMessage => {
   return {
     title: 'Ошибка сервера',
-    description: message || 'Внутренняя ошибка сервера. Попробуйте позже',
+    description: getNormalizedMessage(message, 'Внутренняя ошибка сервера. Попробуйте позже'),
     icon: 'i-lucide-server-off',
     action: 'Попробуйте через несколько минут'
   }
 }
 
-/**
- * Gets error message configuration based on HTTP status code
- */
 const getErrorMessage = (status: number, message: string): ErrorMessage => {
+  if (status === 0) {
+    return {
+      title: 'Нет подключения к интернету',
+      description: getNormalizedMessage(message, 'Не удалось подключиться к серверу. Проверьте подключение к интернету'),
+      icon: 'i-lucide-wifi-off',
+      action: 'Проверьте подключение и попробуйте снова'
+    }
+  }
   if (status >= 400 && status < 500) {
     return getClientErrorMessage(status, message)
   }
@@ -90,7 +93,7 @@ const getErrorMessage = (status: number, message: string): ErrorMessage => {
   }
   return {
     title: 'Ошибка',
-    description: message || 'Что-то пошло не так',
+    description: getNormalizedMessage(message, 'Что-то пошло не так'),
     icon: 'i-lucide-x-circle',
     action: 'Обновите страницу'
   }
@@ -107,18 +110,26 @@ const getErrorMessage = (status: number, message: string): ErrorMessage => {
  */
 export function useErrorHandler() {
   const toast = useToast()
+  const { isOnline } = useOnlineStatus()
 
-  /**
-   * Handles errors and shows appropriate user notifications
-   * @param error - Error object (ApiError, Error, or unknown)
-   */
   const handleError = (error: unknown) => {
     if (error instanceof ApiError) {
       const { title, description, icon, action } = getErrorMessage(error.status, error.message)
 
       if (error.status === 401) {
-        const { logout } = useAuth()
-        logout()
+        const { isAuthenticated, logout } = useAuth()
+
+        toast.add({
+          title,
+          description,
+          color: 'red',
+          icon,
+          timeout: 5000
+        })
+
+        if (isAuthenticated.value) {
+          logout()
+        }
         return
       }
 
@@ -135,11 +146,21 @@ export function useErrorHandler() {
       }
 
       const isNetworkError = error.message.includes('Failed to fetch') || error.message.includes('NetworkError')
+
+      if (!isOnline.value || isNetworkError) {
+        toast.add({
+          title: 'Нет подключения к интернету',
+          description: 'Проверьте подключение к интернету и попробуйте снова',
+          color: 'red',
+          icon: 'i-lucide-wifi-off',
+          timeout: 5000
+        })
+        return
+      }
+
       toast.add({
         title: 'Ошибка сети',
-        description: isNetworkError
-          ? 'Не удалось подключиться к серверу. Проверьте подключение к интернету и попробуйте снова'
-          : (error.message || 'Проверьте подключение к интернету'),
+        description: error.message || 'Проверьте подключение к интернету',
         color: 'red',
         icon: 'i-lucide-wifi-off',
         timeout: 5000

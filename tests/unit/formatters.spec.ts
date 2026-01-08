@@ -4,7 +4,6 @@ import {
   formatDate,
   formatTime,
   formatDateTime,
-  formatCountdown,
   getFullPosterUrl
 } from '~/shared/lib/formatters'
 
@@ -52,24 +51,6 @@ describe('formatDateTime', () => {
   it('combines date and time', () => {
     const date = new Date('2024-07-24T15:30:00')
     expect(formatDateTime(date)).toBe('24.07 15:30')
-  })
-})
-
-describe('formatCountdown', () => {
-  it('formats countdown timer', () => {
-    expect(formatCountdown(180)).toBe('3:00')
-    expect(formatCountdown(90)).toBe('1:30')
-    expect(formatCountdown(45)).toBe('0:45')
-  })
-
-  it('handles zero and negative values', () => {
-    expect(formatCountdown(0)).toBe('0:00')
-    expect(formatCountdown(-10)).toBe('0:00')
-  })
-
-  it('pads seconds with zero', () => {
-    expect(formatCountdown(65)).toBe('1:05')
-    expect(formatCountdown(9)).toBe('0:09')
   })
 })
 

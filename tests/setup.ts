@@ -1,6 +1,19 @@
 import { config } from '@vue/test-utils'
 import { vi } from 'vitest'
 import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query'
+import * as Vue from 'vue'
+
+Object.assign(globalThis, {
+  computed: Vue.computed,
+  ref: Vue.ref,
+  reactive: Vue.reactive,
+  toValue: Vue.toValue,
+  watch: Vue.watch,
+  watchEffect: Vue.watchEffect,
+  onMounted: Vue.onMounted,
+  onUnmounted: Vue.onUnmounted,
+  nextTick: Vue.nextTick
+})
 
 // Mock Nuxt composables
 vi.mock('#app', () => ({
@@ -16,6 +29,10 @@ vi.mock('#app', () => ({
     fullPath: '/',
     path: '/'
   }),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn()
+  }),
   useCookie: vi.fn(() => ({ value: null })),
   useState: vi.fn((key: string, init: () => unknown) => ({ value: init() })),
   useToast: vi.fn(() => ({
@@ -25,8 +42,32 @@ vi.mock('#app', () => ({
     const error = new Error(options.message)
     ;(error as Error & { statusCode?: number }).statusCode = options.statusCode
     return error
-  })
+  }),
+  computed: Vue.computed,
+  ref: Vue.ref,
+  toValue: Vue.toValue
 }))
+
+Object.assign(globalThis, {
+  useRoute: () => ({
+    query: {},
+    params: {},
+    fullPath: '/',
+    path: '/'
+  }),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn()
+  }),
+  useToast: () => ({
+    add: vi.fn()
+  }),
+  useRuntimeConfig: () => ({
+    public: {
+      apiBase: 'http://localhost:3022'
+    }
+  })
+})
 
 // Setup Vue Query for tests
 const queryClient = new QueryClient({

@@ -1,9 +1,4 @@
-interface JWTPayload {
-  sub?: number
-  exp?: number
-  iat?: number
-  [key: string]: unknown
-}
+import { JWTPayloadSchema } from '~/shared/schemas'
 
 export interface DecodedToken {
   id: number
@@ -18,18 +13,27 @@ export function decodeJWT(token: string): DecodedToken | null {
       return null
     }
 
-    const payload = JSON.parse(atob(parts[1])) as JWTPayload
+    const decodedPayload = JSON.parse(atob(parts[1]))
+    const result = JWTPayloadSchema.safeParse(decodedPayload)
 
-    if (!payload.sub) {
+    if (!result.success) {
       return null
     }
+
+    const payload = result.data
 
     if (payload.exp && payload.exp * 1000 < Date.now()) {
       return null
     }
 
+    const userId = payload.sub ?? payload.id
+
+    if (!userId || typeof userId !== 'number') {
+      return null
+    }
+
     return {
-      id: payload.sub,
+      id: userId,
       exp: payload.exp
     }
   } catch {

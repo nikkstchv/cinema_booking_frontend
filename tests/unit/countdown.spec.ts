@@ -20,7 +20,6 @@ describe('useCountdown', () => {
   })
 
   it('starts with initial seconds', async () => {
-    // Dynamic import to get fresh module
     const { useCountdown } = await import('~/composables/useCountdown')
 
     const { remainingSeconds, formattedTime, isExpired } = useCountdown(180)
@@ -30,13 +29,14 @@ describe('useCountdown', () => {
     expect(isExpired.value).toBe(false)
   })
 
-  it('decrements every second', async () => {
+  it('decrements every second after start', async () => {
     const { useCountdown } = await import('~/composables/useCountdown')
 
-    const { remainingSeconds } = useCountdown(10)
+    const { remainingSeconds, start } = useCountdown(10)
 
     expect(remainingSeconds.value).toBe(10)
 
+    start()
     vi.advanceTimersByTime(1000)
     expect(remainingSeconds.value).toBe(9)
 
@@ -44,14 +44,26 @@ describe('useCountdown', () => {
     expect(remainingSeconds.value).toBe(6)
   })
 
+  it('does not decrement before start', async () => {
+    const { useCountdown } = await import('~/composables/useCountdown')
+
+    const { remainingSeconds } = useCountdown(10)
+
+    expect(remainingSeconds.value).toBe(10)
+
+    vi.advanceTimersByTime(2000)
+    expect(remainingSeconds.value).toBe(10)
+  })
+
   it('calls onExpire callback when reaching zero', async () => {
     const { useCountdown } = await import('~/composables/useCountdown')
 
     const onExpire = vi.fn()
-    const { isExpired } = useCountdown(2, onExpire)
+    const { isExpired, start } = useCountdown(2, onExpire)
 
     expect(onExpire).not.toHaveBeenCalled()
 
+    start()
     vi.advanceTimersByTime(2000)
 
     expect(onExpire).toHaveBeenCalledTimes(1)
@@ -69,9 +81,10 @@ describe('useCountdown', () => {
   it('stops at zero', async () => {
     const { useCountdown } = await import('~/composables/useCountdown')
 
-    const { remainingSeconds } = useCountdown(1)
+    const { remainingSeconds, start } = useCountdown(1)
 
-    vi.advanceTimersByTime(5000) // Advance more than initial
+    start()
+    vi.advanceTimersByTime(5000)
 
     expect(remainingSeconds.value).toBe(0)
   })

@@ -14,11 +14,32 @@ export function useSessionDetails(sessionId: number | Ref<number>) {
     queryKey: computed(() => queryKeys.sessions.detail(id.value)),
     queryFn: ({ signal }) => sessionsRepository.getById(id.value, signal),
     enabled: computed(() => id.value > 0),
-    // Refresh on window focus to get latest booked seats
     refetchOnWindowFocus: true,
-    // Short stale time for seat availability
-    staleTime: 10 * 1000 // 10 seconds
+    staleTime: 10 * 1000,
+    gcTime: 2 * 60 * 1000
   })
+}
+
+const BOOKING_ERROR_MESSAGES = {
+  NOT_FOUND: 'не найдены',
+  ALREADY_BOOKED: 'уже забронированы',
+  IN_PROGRESS: 'уже выполняется'
+} as const
+
+function hasSeatConflict(seat: Seat, bookedSeats: Seat[]): boolean {
+  return bookedSeats.some(
+    booked => booked.rowNumber === seat.rowNumber && booked.seatNumber === seat.seatNumber
+  )
+}
+
+function findConflictingSeats(seats: Seat[], bookedSeats: Seat[]): Seat[] {
+  return seats.filter(seat => hasSeatConflict(seat, bookedSeats))
+}
+
+function isBookingError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const message = error.message
+  return Object.values(BOOKING_ERROR_MESSAGES).some(msg => message.includes(msg))
 }
 
 /**
@@ -34,9 +55,6 @@ export function useBookSession(sessionId: number | Ref<number>) {
 
   return useMutation({
     mutationFn: (seats: Seat[]) => {
-      if (isProcessingRef.value) {
-        throw new Error('Бронирование уже выполняется')
-      }
       return sessionsRepository.book(id.value, seats)
     },
 
@@ -63,11 +81,7 @@ export function useBookSession(sessionId: number | Ref<number>) {
         throw new Error('Данные сеанса не найдены')
       }
 
-      const conflictingSeats = seats.filter(seat =>
-        previous.bookedSeats.some(
-          booked => booked.rowNumber === seat.rowNumber && booked.seatNumber === seat.seatNumber
-        )
-      )
+      const conflictingSeats = findConflictingSeats(seats, previous.bookedSeats)
 
       if (conflictingSeats.length > 0) {
         isProcessingRef.value = false
@@ -78,11 +92,7 @@ export function useBookSession(sessionId: number | Ref<number>) {
         queryKeys.sessions.detail(id.value),
         (old) => {
           if (!old) return previous
-          const hasConflict = seats.some(seat =>
-            old.bookedSeats.some(
-              booked => booked.rowNumber === seat.rowNumber && booked.seatNumber === seat.seatNumber
-            )
-          )
+          const hasConflict = seats.some(seat => hasSeatConflict(seat, old.bookedSeats))
           if (hasConflict) {
             return previous
           }
@@ -106,10 +116,10 @@ export function useBookSession(sessionId: number | Ref<number>) {
         )
       }
 
-      if (err instanceof Error && (err.message.includes('не найдены') || err.message.includes('уже забронированы') || err.message.includes('уже выполняется'))) {
+      if (isBookingError(err)) {
         toast.add({
           title: 'Ошибка бронирования',
-          description: err.message,
+          description: err instanceof Error ? err.message : 'Произошла ошибка при бронировании',
           color: 'red',
           icon: 'i-lucide-alert-circle'
         })
@@ -129,19 +139,29 @@ export function useBookSession(sessionId: number | Ref<number>) {
       })
 
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.detail(id.value) })
     }
   })
 }
 
 /**
  * Get multiple session details by IDs
+ * Optimized to use parallel requests with proper caching
  */
 export function useSessionsBatch(sessionIds: Ref<number[]>) {
-  const ids = computed(() => sessionIds.value)
+  const ids = computed(() => {
+    const uniqueIds = [...new Set(sessionIds.value)]
+    const filtered = uniqueIds.filter(id => id > 0)
+    return filtered.sort((a, b) => a - b)
+  })
 
   return useQuery({
-    queryKey: computed(() => [...queryKeys.sessions.detail(0), 'batch', ids.value]),
+    queryKey: computed(() => ['sessions', 'batch', ids.value]),
     queryFn: async ({ signal }) => {
+      if (ids.value.length === 0) {
+        return []
+      }
+
       const sessionDetails = await Promise.all(
         ids.value.map(id => sessionsRepository.getById(id, signal))
       )
@@ -154,6 +174,7 @@ export function useSessionsBatch(sessionIds: Ref<number[]>) {
       }))
     },
     enabled: computed(() => ids.value.length > 0),
-    staleTime: 60 * 1000
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000
   })
 }

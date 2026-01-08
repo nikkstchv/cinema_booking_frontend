@@ -19,6 +19,8 @@ const { getMovie, getCinema, getSession } = useBookingData(computed(() => props.
 
 type BookingCategory = 'unpaid' | 'future' | 'past'
 
+const BOOKING_CATEGORIES: readonly BookingCategory[] = ['unpaid', 'future', 'past'] as const
+
 const getBookingCategory = (booking: Booking): BookingCategory => {
   if (!booking.isPaid) {
     return 'unpaid'
@@ -92,17 +94,17 @@ const categoryLabels: Record<BookingCategory, string> = {
 
     <!-- Bookings list -->
     <template v-else-if="bookings.length">
-      <template v-for="category in (['unpaid', 'future', 'past'] as const)">
+      <template v-for="category in BOOKING_CATEGORIES">
         <div
-          v-if="groupedBookings[category as BookingCategory].length > 0"
+          v-if="groupedBookings[category].length > 0"
           :key="category"
           class="space-y-4"
         >
           <h2 class="text-xl font-semibold text-gray-900 mt-8 first:mt-0">
-            {{ categoryLabels[category as BookingCategory] }}
+            {{ categoryLabels[category] }}
           </h2>
           <TicketCard
-            v-for="booking in groupedBookings[category as BookingCategory]"
+            v-for="booking in groupedBookings[category]"
             :key="booking.id"
             :booking="booking"
             :movie="getMovie(booking)"

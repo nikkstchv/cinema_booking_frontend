@@ -10,7 +10,10 @@ import type { Booking } from '~/shared/schemas'
 export function useMyBookings() {
   return useQuery({
     queryKey: queryKeys.bookings.all,
-    queryFn: ({ signal }) => bookingsRepository.getMyBookings(signal)
+    queryFn: ({ signal }) => bookingsRepository.getMyBookings(signal),
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true
   })
 }
 
@@ -21,7 +24,8 @@ export function useSettings() {
   return useQuery({
     queryKey: queryKeys.settings,
     queryFn: ({ signal }) => settingsRepository.get(signal),
-    staleTime: 1000 * 60 * 5 // 5 minutes
+    staleTime: 1000 * 60 * 5,
+    gcTime: 10 * 60 * 1000
   })
 }
 
@@ -33,13 +37,8 @@ export function usePayBooking() {
   const toast = useToast()
   const { handleError } = useErrorHandler()
 
-  const isProcessingRef = ref(false)
-
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (bookingId: string) => {
-      if (isProcessingRef.value) {
-        throw new Error('Оплата уже выполняется')
-      }
       return bookingsRepository.pay(bookingId)
     },
 
@@ -49,23 +48,15 @@ export function usePayBooking() {
     retryDelay: RETRY_CONFIG.critical.retryDelay,
 
     onMutate: async (bookingId) => {
-      if (isProcessingRef.value) {
-        throw new Error('Оплата уже выполняется')
-      }
-
-      isProcessingRef.value = true
-
       await queryClient.cancelQueries({ queryKey: queryKeys.bookings.all })
 
       const previous = queryClient.getQueryData<Booking[]>(queryKeys.bookings.all)
 
       const booking = previous?.find(b => b.id === bookingId)
       if (!booking) {
-        isProcessingRef.value = false
         throw new Error('Билет не найден')
       }
       if (booking.isPaid) {
-        isProcessingRef.value = false
         throw new Error('Билет уже оплачен')
       }
 
@@ -82,13 +73,11 @@ export function usePayBooking() {
     },
 
     onError: (err, bookingId, context) => {
-      isProcessingRef.value = false
-
       if (context?.previous) {
         queryClient.setQueryData(queryKeys.bookings.all, context.previous)
       }
 
-      if (err instanceof Error && (err.message.includes('не найден') || err.message.includes('уже оплачен') || err.message.includes('уже выполняется'))) {
+      if (err instanceof Error && (err.message.includes('не найден') || err.message.includes('уже оплачен'))) {
         toast.add({
           title: 'Ошибка оплаты',
           description: err.message,
@@ -101,8 +90,6 @@ export function usePayBooking() {
     },
 
     onSuccess: () => {
-      isProcessingRef.value = false
-
       toast.add({
         title: 'Билет оплачен!',
         description: 'Спасибо за покупку',
@@ -113,4 +100,6 @@ export function usePayBooking() {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all })
     }
   })
+
+  return mutation
 }

@@ -45,13 +45,13 @@ export class ApiClient {
    * Makes an HTTP request
    * @param endpoint - API endpoint path
    * @param options - Request options (method, body, headers, signal)
-   * @returns Promise resolving to response data
+   * @returns Promise resolving to response data (unknown - should be validated in repositories)
    * @throws ApiError if request fails
    */
-  async request<T>(
+  async request(
     endpoint: string,
     options: RequestOptions = {}
-  ): Promise<T> {
+  ): Promise<unknown> {
     const token = this.getToken()
 
     let response: Response
@@ -99,16 +99,16 @@ export class ApiClient {
       const text = await response.text()
       if (text) {
         try {
-          return JSON.parse(text) as T
+          return JSON.parse(text)
         } catch {
           throw new ApiError('Сервер вернул неверный формат данных', response.status)
         }
       }
-      return null as T
+      return null
     }
 
     try {
-      return await response.json()
+      return response.json()
     } catch {
       throw new ApiError('Не удалось обработать ответ сервера', response.status)
     }
@@ -118,10 +118,10 @@ export class ApiClient {
    * Makes a GET request
    * @param endpoint - API endpoint path
    * @param options - Request options with optional AbortSignal
-   * @returns Promise resolving to response data
+   * @returns Promise resolving to response data (unknown - should be validated in repositories)
    */
-  get<T>(endpoint: string, options?: { signal?: AbortSignal }): Promise<T> {
-    return this.request<T>(endpoint, { method: 'GET', ...options })
+  get(endpoint: string, options?: { signal?: AbortSignal }): Promise<unknown> {
+    return this.request(endpoint, { method: 'GET', ...options })
   }
 
   /**
@@ -129,10 +129,10 @@ export class ApiClient {
    * @param endpoint - API endpoint path
    * @param data - Request body data
    * @param options - Request options with optional AbortSignal
-   * @returns Promise resolving to response data
+   * @returns Promise resolving to response data (unknown - should be validated in repositories)
    */
-  post<T>(endpoint: string, data: unknown, options?: { signal?: AbortSignal }): Promise<T> {
-    return this.request<T>(endpoint, {
+  post(endpoint: string, data: unknown, options?: { signal?: AbortSignal }): Promise<unknown> {
+    return this.request(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
       ...options

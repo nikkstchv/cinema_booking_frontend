@@ -45,18 +45,6 @@ export function formatDateTime(date: string | Date): string {
 }
 
 /**
- * Format countdown timer
- * @param seconds - Remaining seconds
- * @returns Formatted string like "2:59"
- */
-export function formatCountdown(seconds: number): string {
-  if (seconds <= 0) return '0:00'
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
-/**
  * Get full poster URL
  * @param posterPath - Relative poster path from API
  * @param baseUrl - API base URL

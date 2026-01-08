@@ -17,6 +17,7 @@ const posterUrl = computed(() =>
   <NuxtLink
     :to="`/movies/${movie.id}`"
     class="group block"
+    :data-testid="`movie-link-${movie.id}`"
   >
     <div class="bg-white rounded-lg overflow-hidden shadow-sm transition-shadow hover:shadow-lg border border-gray-200">
       <div class="aspect-[2/3] relative overflow-hidden bg-gray-100">

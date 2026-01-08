@@ -18,12 +18,10 @@ const emit = defineEmits<{
   expired: []
 }>()
 
-const formatSeats = (booking: Booking): string => {
-  return [...booking.seats]
+const sortedSeats = computed(() => {
+  return [...props.booking.seats]
     .sort((a, b) => a.rowNumber - b.rowNumber || a.seatNumber - b.seatNumber)
-    .map(s => `Р${s.rowNumber}М${s.seatNumber}`)
-    .join(', ')
-}
+})
 
 const isExpired = ref(false)
 
@@ -70,12 +68,23 @@ const showPayButton = computed(() =>
             <span>{{ session ? formatDateTime(session.startTime) : 'Загрузка...' }}</span>
           </div>
 
-          <div class="flex items-center gap-1">
-            <UIcon
-              name="i-lucide-armchair"
-              class="w-4 h-4 flex-shrink-0"
-            />
-            <span>{{ formatSeats(booking) }}</span>
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center gap-1">
+              <UIcon
+                name="i-lucide-armchair"
+                class="w-4 h-4 flex-shrink-0"
+              />
+              <span class="text-sm text-gray-600">Места:</span>
+            </div>
+            <div class="flex flex-col gap-0.5 ml-5">
+              <div
+                v-for="seat in sortedSeats"
+                :key="`${seat.rowNumber}-${seat.seatNumber}`"
+                class="text-sm text-gray-600"
+              >
+                Ряд-{{ seat.rowNumber }} Место-{{ seat.seatNumber }}
+              </div>
+            </div>
           </div>
         </div>
       </div>

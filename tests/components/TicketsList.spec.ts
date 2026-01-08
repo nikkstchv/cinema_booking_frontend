@@ -94,15 +94,16 @@ describe('TicketsList', () => {
       global: {
         stubs: {
           TicketCard: {
-            template: '<div @click="$emit(\'pay\')">Pay</div>',
+            template: '<div data-testid="ticket-card" @click="$emit(\'pay\', booking.id)">Pay</div>',
+            props: ['booking'],
             emits: ['pay']
           }
         }
       }
     })
 
-    const ticketCard = wrapper.findComponent({ name: 'TicketCard' })
-    await ticketCard.vm.$emit('pay')
+    const ticketCard = wrapper.find('[data-testid="ticket-card"]')
+    await ticketCard.trigger('click')
 
     expect(wrapper.emitted('pay')).toBeTruthy()
   })
@@ -116,15 +117,16 @@ describe('TicketsList', () => {
       global: {
         stubs: {
           TicketCard: {
-            template: '<div @click="$emit(\'expired\')">Expired</div>',
+            template: '<div data-testid="ticket-card" @click="$emit(\'expired\')">Expired</div>',
+            props: ['booking'],
             emits: ['expired']
           }
         }
       }
     })
 
-    const ticketCard = wrapper.findComponent({ name: 'TicketCard' })
-    await ticketCard.vm.$emit('expired')
+    const ticketCard = wrapper.find('[data-testid="ticket-card"]')
+    await ticketCard.trigger('click')
 
     expect(wrapper.emitted('expired')).toBeTruthy()
   })

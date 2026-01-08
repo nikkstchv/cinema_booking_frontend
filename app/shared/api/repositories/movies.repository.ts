@@ -6,12 +6,13 @@ import { logger } from '../../lib/logger'
 export const moviesRepository = {
   async getAll(signal?: AbortSignal): Promise<Movie[]> {
     const client = useApiClient()
-    const response = await client.get<unknown>('/movies', { signal })
+    const response = await client.get('/movies', { signal })
 
     const result = z.array(MovieSchema).safeParse(response)
     if (!result.success) {
+      const errorDetails = result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
       logger.error('Movies response validation failed:', result.error)
-      throw new ApiError('Invalid movies response', 500)
+      throw new ApiError(`Неверный формат ответа сервера при получении фильмов: ${errorDetails}`, 500)
     }
 
     return result.data
@@ -19,12 +20,13 @@ export const moviesRepository = {
 
   async getSessions(movieId: number, signal?: AbortSignal): Promise<MovieSession[]> {
     const client = useApiClient()
-    const response = await client.get<unknown>(`/movies/${movieId}/sessions`, { signal })
+    const response = await client.get(`/movies/${movieId}/sessions`, { signal })
 
     const result = z.array(MovieSessionSchema).safeParse(response)
     if (!result.success) {
-      console.error('Movie sessions response validation failed:', result.error)
-      throw new ApiError('Invalid movie sessions response', 500)
+      const errorDetails = result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+      logger.error('Movie sessions response validation failed:', result.error)
+      throw new ApiError(`Неверный формат ответа сервера при получении сеансов: ${errorDetails}`, 500)
     }
 
     return result.data

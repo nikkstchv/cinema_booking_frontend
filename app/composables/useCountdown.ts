@@ -1,10 +1,6 @@
 import { ref, computed, onUnmounted } from 'vue'
+import { TIME_CONSTANTS } from '~/shared/lib/constants'
 
-/**
- * Countdown timer composable for payment timeout
- * @param initialSeconds - Initial countdown value in seconds
- * @param onExpire - Callback when countdown reaches 0
- */
 export function useCountdown(initialSeconds: number, onExpire?: () => void) {
   const remainingSeconds = ref(initialSeconds)
   const isRunning = ref(false)
@@ -30,7 +26,7 @@ export function useCountdown(initialSeconds: number, onExpire?: () => void) {
         stop()
         onExpire?.()
       }
-    }, 1000)
+    }, TIME_CONSTANTS.COUNTDOWN_INTERVAL_MS)
   }
 
   const stop = () => {
@@ -46,10 +42,6 @@ export function useCountdown(initialSeconds: number, onExpire?: () => void) {
     remainingSeconds.value = seconds ?? initialSeconds
   }
 
-  // Auto-start on creation
-  start()
-
-  // Cleanup on unmount
   onUnmounted(() => {
     stop()
   })
@@ -58,7 +50,6 @@ export function useCountdown(initialSeconds: number, onExpire?: () => void) {
     remainingSeconds: computed(() => remainingSeconds.value),
     formattedTime,
     isExpired,
-    isRunning: computed(() => isRunning.value),
     start,
     stop,
     reset

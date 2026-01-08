@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-// Movie schema
 export const MovieSchema = z.object({
   id: z.number(),
   title: z.string(),
@@ -11,26 +10,22 @@ export const MovieSchema = z.object({
   rating: z.number().min(0).max(10)
 })
 
-// Cinema schema
 export const CinemaSchema = z.object({
   id: z.number(),
   name: z.string(),
   address: z.string()
 })
 
-// Seat schema
 export const SeatSchema = z.object({
   rowNumber: z.number().positive(),
   seatNumber: z.number().positive()
 })
 
-// Seats info schema
 export const SeatsInfoSchema = z.object({
   rows: z.number().positive(),
   seatsPerRow: z.number().positive()
 })
 
-// Movie session schema
 export const MovieSessionSchema = z.object({
   id: z.number(),
   movieId: z.number(),
@@ -38,7 +33,6 @@ export const MovieSessionSchema = z.object({
   startTime: z.string()
 })
 
-// Movie session with seats schema
 export const MovieSessionDetailsSchema = MovieSessionSchema.extend({
   seats: SeatsInfoSchema,
   bookedSeats: z.array(SeatSchema)
@@ -54,12 +48,10 @@ export const BookingSchema = z.object({
   isPaid: z.boolean()
 })
 
-// Settings schema
 export const SettingsSchema = z.object({
   bookingPaymentTimeSeconds: z.number()
 })
 
-// Auth schemas
 export const LoginRequestSchema = z.object({
   username: z.string().min(8, 'Минимум 8 символов'),
   password: z.string().min(8, 'Минимум 8 символов')
@@ -82,23 +74,26 @@ export const AuthResponseSchema = z.object({
   token: z.string()
 })
 
-// API Error schema
 export const ApiErrorResponseSchema = z.object({
   message: z.string(),
   error: z.string().optional()
 })
 
-// Booking response schema
 export const BookingResponseSchema = z.object({
   bookingId: z.string()
 })
 
-// Payment response schema
 export const PaymentResponseSchema = z.object({
   message: z.string()
 })
 
-// Infer types from schemas
+export const JWTPayloadSchema = z.object({
+  sub: z.number().optional(),
+  id: z.number().optional(),
+  exp: z.number().optional(),
+  iat: z.number().optional()
+}).passthrough()
+
 export type Movie = z.infer<typeof MovieSchema>
 export type Cinema = z.infer<typeof CinemaSchema>
 export type Seat = z.infer<typeof SeatSchema>

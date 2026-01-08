@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import TicketsList from '~/features/bookings/components/TicketsList.vue'
 import { useMyBookings, useSettings, usePayBooking } from '~/features/bookings/composables/useBookings'
-import { DEFAULT_PAYMENT_TIMEOUT_SECONDS } from '~/shared/lib/constants'
+import { DEFAULT_PAYMENT_TIMEOUT_SECONDS, TIME_CONSTANTS } from '~/shared/lib/constants'
 
 definePageMeta({
   middleware: 'auth'
@@ -35,6 +35,9 @@ watch(bookingsError, (err) => {
 })
 
 const handlePay = (bookingId: string) => {
+  if (isPaying.value || payingVariables.value === bookingId) {
+    return
+  }
   pay(bookingId)
 }
 
@@ -59,16 +62,28 @@ const checkExpiredBookings = () => {
   }
 }
 
+const checkInterval = ref<ReturnType<typeof setInterval> | null>(null)
+
 onMounted(() => {
   checkExpiredBookings()
+
+  if (import.meta.client) {
+    checkInterval.value = setInterval(() => {
+      checkExpiredBookings()
+    }, TIME_CONSTANTS.BOOKING_CHECK_INTERVAL_MS)
+
+    window.addEventListener('focus', checkExpiredBookings)
+  }
 })
 
-if (import.meta.client) {
-  window.addEventListener('focus', checkExpiredBookings)
-  onUnmounted(() => {
+onUnmounted(() => {
+  if (checkInterval.value) {
+    clearInterval(checkInterval.value)
+  }
+  if (import.meta.client) {
     window.removeEventListener('focus', checkExpiredBookings)
-  })
-}
+  }
+})
 
 const payingBookingId = computed(() =>
   isPaying.value ? payingVariables.value : null
