@@ -1,0 +1,6 @@
+export { authRepository } from './auth.repository'
+export { moviesRepository } from './movies.repository'
+export { cinemasRepository } from './cinemas.repository'
+export { sessionsRepository } from './sessions.repository'
+export { bookingsRepository } from './bookings.repository'
+export { settingsRepository } from './settings.repository'
