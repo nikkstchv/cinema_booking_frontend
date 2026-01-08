@@ -10,7 +10,7 @@ export function useCinemas() {
     queryKey: queryKeys.cinemas.all,
     queryFn: ({ signal }) => cinemasRepository.getAll(signal),
     staleTime: 1000 * 60 * 10,
-    keepPreviousData: true
+    placeholderData: previousData => previousData
   })
 }
 
@@ -25,6 +25,6 @@ export function useCinemaSessions(cinemaId: number | Ref<number>) {
     queryFn: ({ signal }) => cinemasRepository.getSessions(id.value, signal),
     enabled: computed(() => id.value > 0),
     staleTime: 1000 * 30,
-    keepPreviousData: true
+    placeholderData: previousData => previousData
   })
 }

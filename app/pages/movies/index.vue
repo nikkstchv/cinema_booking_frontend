@@ -5,7 +5,7 @@ import { useMovies } from '~/features/movies/composables/useMovies'
 const config = useRuntimeConfig()
 
 const baseUrl = computed(() => {
-  if (process.client) {
+  if (import.meta.client) {
     return window.location.origin
   }
   return config.public.apiBase.replace('/api', '') || 'http://localhost:3000'
@@ -26,7 +26,7 @@ useHead({
   ]
 })
 
-const { data: movies, isLoading, error } = useMovies()
+const { data: movies, isLoading, error } = useMovies() as { data: Ref<import('~/shared/schemas').Movie[] | undefined>, isLoading: Ref<boolean>, error: Ref<Error | null> }
 const { handleError } = useErrorHandler()
 
 // Handle query errors

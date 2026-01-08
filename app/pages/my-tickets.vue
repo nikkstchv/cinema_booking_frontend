@@ -14,7 +14,7 @@ definePageMeta({
 const config = useRuntimeConfig()
 
 const baseUrl = computed(() => {
-  if (process.client) {
+  if (import.meta.client) {
     return window.location.origin
   }
   return config.public.apiBase.replace('/api', '') || 'http://localhost:3000'
@@ -35,8 +35,8 @@ const { handleError } = useErrorHandler()
 
 // Fetch data
 const { data: bookings, isLoading: bookingsLoading, error: bookingsError, refetch: refetchBookings } = useMyBookings()
-const { data: movies } = useMovies()
-const { data: cinemas } = useCinemas()
+const { data: movies } = useMovies() as { data: Ref<import('~/shared/schemas').Movie[] | undefined> }
+const { data: cinemas } = useCinemas() as { data: Ref<import('~/shared/schemas').Cinema[] | undefined> }
 const { data: settings } = useSettings()
 
 // Payment mutation

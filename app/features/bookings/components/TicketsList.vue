@@ -42,12 +42,12 @@ const groupedBookings = computed(() => {
     past: []
   }
 
-  props.bookings.forEach(booking => {
+  props.bookings.forEach((booking) => {
     const category = getBookingCategory(booking)
     groups[category].push(booking)
   })
 
-  Object.values(groups).forEach(group => {
+  Object.values(groups).forEach((group) => {
     group.sort((a, b) => {
       const sessionA = getSession(a)
       const sessionB = getSession(b)
@@ -106,7 +106,7 @@ const getSession = (booking: Booking): MovieSession | undefined => {
 
     <!-- Bookings list -->
     <template v-else-if="bookings.length">
-      <template v-for="category in ['unpaid', 'future', 'past'] as category">
+      <template v-for="category in (['unpaid', 'future', 'past'] as const)">
         <div
           v-if="groupedBookings[category as BookingCategory].length > 0"
           :key="category"

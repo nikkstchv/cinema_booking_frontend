@@ -11,7 +11,8 @@
     "typecheck": "nuxt typecheck",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepare": "husky"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.82",
@@ -30,8 +31,15 @@
     "@vue/test-utils": "^2.4.6",
     "eslint": "^9.39.2",
     "happy-dom": "^20.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "typescript": "^5.9.3",
     "vitest": "^4.0.16",
     "vue-tsc": "^3.2.1"
+  },
+  "lint-staged": {
+    "*.{ts,vue,js,mjs}": [
+      "eslint --fix"
+    ]
   }
 }

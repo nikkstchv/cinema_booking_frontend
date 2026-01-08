@@ -16,8 +16,8 @@ const sessionId = computed(() => Number(route.params.id))
 
 // Fetch data
 const { data: session, isLoading: sessionLoading, error: sessionError } = useSessionDetails(sessionId)
-const { data: movies } = useMovies()
-const { data: cinemas } = useCinemas()
+const { data: movies } = useMovies() as { data: Ref<import('~/shared/schemas').Movie[] | undefined> }
+const { data: cinemas } = useCinemas() as { data: Ref<import('~/shared/schemas').Cinema[] | undefined> }
 
 // Booking mutation (only for authenticated users)
 const { mutate: book, isPending: isBooking } = useBookSession(sessionId)
@@ -27,17 +27,19 @@ const selectedSeats = ref<Seat[]>([])
 const showConfirmation = ref(false)
 
 // Get movie and cinema
-const movie = computed(() =>
-  movies.value?.find(m => m.id === session.value?.movieId)
-)
-const cinema = computed(() =>
-  cinemas.value?.find(c => c.id === session.value?.cinemaId)
-)
+const movie = computed(() => {
+  if (!movies.value || !session.value) return undefined
+  return movies.value.find(m => m.id === session.value?.movieId)
+})
+const cinema = computed(() => {
+  if (!cinemas.value || !session.value) return undefined
+  return cinemas.value.find(c => c.id === session.value?.cinemaId)
+})
 
 const config = useRuntimeConfig()
 
 const baseUrl = computed(() => {
-  if (process.client) {
+  if (import.meta.client) {
     return window.location.origin
   }
   return config.public.apiBase.replace('/api', '') || 'http://localhost:3000'
@@ -194,9 +196,9 @@ const cancelConfirmation = () => {
 
     <!-- Confirmation modal -->
     <UModal
+      v-model="showConfirmation"
       aria-labelledby="booking-modal-title"
       aria-describedby="booking-modal-description"
-      v-model="showConfirmation"
       :ui="{ width: 'max-w-md' }"
     >
       <BookingConfirmation

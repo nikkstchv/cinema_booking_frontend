@@ -9,17 +9,20 @@ const { handleError } = useErrorHandler()
 const cinemaId = computed(() => Number(route.params.id))
 
 // Fetch data
-const { data: cinemas, isLoading: cinemasLoading, error: cinemasError } = useCinemas()
-const { data: sessions, isLoading: sessionsLoading, error: sessionsError } = useCinemaSessions(cinemaId)
-const { data: movies, isLoading: moviesLoading } = useMovies()
+const { data: cinemas, isLoading: cinemasLoading, error: cinemasError } = useCinemas() as { data: Ref<import('~/shared/schemas').Cinema[] | undefined>, isLoading: Ref<boolean>, error: Ref<Error | null> }
+const { data: sessions, isLoading: sessionsLoading, error: sessionsError } = useCinemaSessions(cinemaId) as { data: Ref<import('~/shared/schemas').MovieSession[] | undefined>, isLoading: Ref<boolean>, error: Ref<Error | null> }
+const { data: movies, isLoading: moviesLoading } = useMovies() as { data: Ref<import('~/shared/schemas').Movie[] | undefined>, isLoading: Ref<boolean> }
 
 // Find current cinema
-const cinema = computed(() => cinemas.value?.find(c => c.id === cinemaId.value))
+const cinema = computed(() => {
+  if (!cinemas.value) return undefined
+  return cinemas.value.find(c => c.id === cinemaId.value)
+})
 
 const config = useRuntimeConfig()
 
 const baseUrl = computed(() => {
-  if (process.client) {
+  if (import.meta.client) {
     return window.location.origin
   }
   return config.public.apiBase.replace('/api', '') || 'http://localhost:3000'
