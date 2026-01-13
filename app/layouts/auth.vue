@@ -17,5 +17,6 @@ import { APP_ROUTES } from '~/shared/lib/app-routes'
       </NuxtLink>
     </div>
     <slot />
+    <UNotifications aria-live="polite" />
   </div>
 </template>
