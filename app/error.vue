@@ -1,23 +1,23 @@
 <script setup lang="ts">
 import type { NuxtError } from '#app'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
+import { HTTP_STATUS_CODES } from '~/shared/lib/constants'
 
 const props = defineProps<{
   error: NuxtError
 }>()
 
 const handleError = () => {
-  clearError({ redirect: '/movies' })
+  clearError({ redirect: APP_ROUTES.MOVIES.INDEX })
 }
 
+const ERROR_TITLE_MAP: Record<number, string> = {
+  [HTTP_STATUS_CODES.NOT_FOUND]: 'Страница не найдена',
+  [HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR]: 'Ошибка сервера'
+} as const
+
 const errorTitle = computed(() => {
-  switch (props.error.statusCode) {
-    case 404:
-      return 'Страница не найдена'
-    case 500:
-      return 'Ошибка сервера'
-    default:
-      return 'Произошла ошибка'
-  }
+  return ERROR_TITLE_MAP[props.error.statusCode] || 'Произошла ошибка'
 })
 
 const errorDescription = computed(() => {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import RegisterForm from '~/features/auth/components/RegisterForm.vue'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
 
 definePageMeta({
   layout: 'auth'
@@ -14,7 +15,7 @@ useHead({
     { name: 'robots', content: 'noindex, nofollow' }
   ],
   link: [
-    { rel: 'canonical', href: () => `${baseUrl.value}/register` }
+    { rel: 'canonical', href: () => `${baseUrl.value}${APP_ROUTES.AUTH.REGISTER}` }
   ]
 })
 </script>

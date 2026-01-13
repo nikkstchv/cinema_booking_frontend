@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { APP_ROUTES } from '~/shared/lib/app-routes'
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
     <div class="absolute top-4 left-4">
       <NuxtLink
-        to="/movies"
+        :to="APP_ROUTES.MOVIES.INDEX"
         class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
       >
         <UIcon

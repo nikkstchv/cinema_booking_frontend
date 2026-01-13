@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import CinemaList from '~/features/cinemas/components/CinemaList.vue'
-import { useCinemas } from '~/features/cinemas/composables/useCinemas'
+import { useCinemas } from '~/features/cinemas'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
 
 const baseUrl = useBaseUrl()
 
@@ -11,11 +12,11 @@ useHead({
     { property: 'og:type', content: 'website' },
     { property: 'og:title', content: 'Кинотеатры - CinemaBook' },
     { property: 'og:description', content: 'Список всех кинотеатров. Выберите кинотеатр и забронируйте билеты на сеансы.' },
-    { property: 'og:url', content: () => `${baseUrl.value}/cinemas` },
+    { property: 'og:url', content: () => `${baseUrl.value}${APP_ROUTES.CINEMAS.INDEX}` },
     { property: 'og:site_name', content: 'CinemaBook' }
   ],
   link: [
-    { rel: 'canonical', href: () => `${baseUrl.value}/cinemas` }
+    { rel: 'canonical', href: () => `${baseUrl.value}${APP_ROUTES.CINEMAS.INDEX}` }
   ]
 })
 

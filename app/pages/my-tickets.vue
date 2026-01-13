@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import TicketsList from '~/features/bookings/components/TicketsList.vue'
-import { useMyBookings, useSettings, usePayBooking } from '~/features/bookings/composables/useBookings'
+import { useMyBookings, useSettings, usePayBooking } from '~/features/bookings'
 import { DEFAULT_PAYMENT_TIMEOUT_SECONDS, TIME_CONSTANTS } from '~/shared/lib/constants'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
 
 definePageMeta({
   middleware: 'auth'
@@ -16,7 +17,7 @@ useHead({
     { name: 'robots', content: 'noindex, nofollow' }
   ],
   link: [
-    { rel: 'canonical', href: () => `${baseUrl.value}/my-tickets` }
+    { rel: 'canonical', href: () => `${baseUrl.value}${APP_ROUTES.MY_TICKETS}` }
   ]
 })
 
@@ -95,7 +96,7 @@ watch([bookings, isPaying], ([bookingsVal, paying]) => {
   if (paying) {
     announcement.value = 'Идет обработка оплаты...'
   } else if (bookingsVal && bookingsVal.length > 0) {
-    const unpaidCount = bookingsVal.filter(b => !b.isPaid).length
+    const unpaidCount = bookingsVal.filter(booking => !booking.isPaid).length
     if (unpaidCount > 0) {
       announcement.value = `У вас ${unpaidCount} неоплаченных билетов`
     } else {

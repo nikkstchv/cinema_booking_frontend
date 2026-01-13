@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { LoginRequestSchema } from '~/shared/schemas'
 import { useAuth } from '../composables/useAuth'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
 import type { FormSubmitEvent } from '#ui/types'
 
 const route = useRoute()
@@ -30,8 +31,9 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       icon: 'i-lucide-check-circle'
     })
 
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/my-tickets'
-    navigateTo(redirect)
+    await nextTick()
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : APP_ROUTES.MY_TICKETS
+    await navigateTo(redirect)
   } catch (error) {
     handleError(error)
   } finally {
@@ -99,7 +101,7 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       <p class="text-sm text-center text-gray-500">
         Нет аккаунта?
         <NuxtLink
-          to="/register"
+          :to="APP_ROUTES.AUTH.REGISTER"
           class="text-indigo-600 hover:text-indigo-500 font-medium"
         >
           Зарегистрируйтесь

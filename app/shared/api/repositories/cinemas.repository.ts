@@ -2,11 +2,12 @@ import { z } from 'zod'
 import { useApiClient, ApiError } from '../client'
 import { CinemaSchema, MovieSessionSchema, type Cinema, type MovieSession } from '../../schemas'
 import { logger } from '../../lib/logger'
+import { API_ENDPOINTS } from '../../lib/api-endpoints'
 
 export const cinemasRepository = {
   async getAll(signal?: AbortSignal): Promise<Cinema[]> {
     const client = useApiClient()
-    const response = await client.get('/cinemas', { signal })
+    const response = await client.get(API_ENDPOINTS.CINEMAS.ALL, { signal })
 
     const result = z.array(CinemaSchema).safeParse(response)
     if (!result.success) {
@@ -20,7 +21,7 @@ export const cinemasRepository = {
 
   async getSessions(cinemaId: number, signal?: AbortSignal): Promise<MovieSession[]> {
     const client = useApiClient()
-    const response = await client.get(`/cinemas/${cinemaId}/sessions`, { signal })
+    const response = await client.get(API_ENDPOINTS.CINEMAS.SESSIONS(cinemaId), { signal })
 
     const result = z.array(MovieSessionSchema).safeParse(response)
     if (!result.success) {

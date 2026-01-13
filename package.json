@@ -17,8 +17,6 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@iconify-json/lucide": "^1.2.82",
-    "@iconify-json/simple-icons": "^1.2.63",
     "@nuxt/ui": "^2.22.3",
     "@tanstack/vue-query": "^5.92.5",
     "nuxt": "^4.2.2",

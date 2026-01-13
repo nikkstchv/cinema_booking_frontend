@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import SeatSelector from '~/features/sessions/components/SeatSelector.vue'
 import BookingConfirmation from '~/features/sessions/components/BookingConfirmation.vue'
-import { useSessionDetails, useBookSession } from '~/features/sessions/composables/useSessions'
-import { useMovies } from '~/features/movies/composables/useMovies'
-import { useCinemas } from '~/features/cinemas/composables/useCinemas'
-import { useAuth } from '~/features/auth/composables/useAuth'
+import { useSessionDetails, useBookSession } from '~/features/sessions'
+import { useMovies } from '~/features/movies'
+import { useCinemas } from '~/features/cinemas'
+import { useAuth } from '~/features/auth'
+import { useSessionSEO } from '~/features/sessions/composables/useSessionSEO'
 import { formatDateTime } from '~/shared/lib/formatters'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
+import { createEntityMap } from '~/shared/lib/normalize'
 import type { Seat } from '~/shared/schemas'
 
 const route = useRoute()
@@ -14,44 +17,29 @@ const { isAuthenticated } = useAuth()
 
 const sessionId = computed(() => Number(route.params.id))
 
-// Fetch data
 const { data: session, isLoading: sessionLoading, error: sessionError } = useSessionDetails(sessionId)
 const { data: movies } = useMovies()
 const { data: cinemas } = useCinemas()
 
-// Booking mutation (only for authenticated users)
 const { mutate: book, isPending: isBooking } = useBookSession(sessionId)
 
-// Selected seats
 const selectedSeats = ref<Seat[]>([])
 const showConfirmation = ref(false)
 
-// Get movie and cinema
+const moviesMap = createEntityMap(movies)
+const cinemasMap = createEntityMap(cinemas)
+
 const movie = computed(() => {
-  if (!movies.value || !session.value) return undefined
-  return movies.value.find(m => m.id === session.value?.movieId)
+  if (!session.value) return undefined
+  return moviesMap.value.get(session.value.movieId)
 })
+
 const cinema = computed(() => {
-  if (!cinemas.value || !session.value) return undefined
-  return cinemas.value.find(c => c.id === session.value?.cinemaId)
+  if (!session.value) return undefined
+  return cinemasMap.value.get(session.value.cinemaId)
 })
 
-const baseUrl = useBaseUrl()
-
-const canonicalUrl = computed(() => `${baseUrl.value}/sessions/${sessionId.value}`)
-
-useHead({
-  title: () => movie.value
-    ? `Бронирование - ${movie.value.title} - CinemaBook`
-    : 'Бронирование - CinemaBook',
-  meta: [
-    { name: 'description', content: () => movie.value ? `Бронирование билетов на фильм ${movie.value.title}` : 'Бронирование билетов в кинотеатр' },
-    { name: 'robots', content: 'noindex, nofollow' }
-  ],
-  link: [
-    { rel: 'canonical', href: () => canonicalUrl.value }
-  ]
-})
+useSessionSEO(sessionId, movie)
 
 // Handle errors
 watch(sessionError, (err) => {
@@ -63,11 +51,10 @@ const handleSeatsUpdate = (seats: Seat[]) => {
   selectedSeats.value = seats
 }
 
-// Open confirmation modal or redirect to login
 const openConfirmation = () => {
   if (!isAuthenticated.value) {
     navigateTo({
-      path: '/login',
+      path: APP_ROUTES.AUTH.LOGIN,
       query: {
         redirect: route.fullPath
       }
@@ -87,7 +74,7 @@ const confirmBooking = () => {
     onSuccess: () => {
       showConfirmation.value = false
       selectedSeats.value = []
-      navigateTo('/my-tickets')
+      navigateTo(APP_ROUTES.MY_TICKETS)
     }
   })
 }
@@ -106,7 +93,7 @@ const buttonDisabled = computed(() => {
   <div>
     <!-- Back button -->
     <NuxtLink
-      :to="movie ? `/movies/${movie.id}` : '/movies'"
+      :to="movie ? APP_ROUTES.MOVIES.DETAIL(movie.id) : APP_ROUTES.MOVIES.INDEX"
       class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
     >
       <UIcon

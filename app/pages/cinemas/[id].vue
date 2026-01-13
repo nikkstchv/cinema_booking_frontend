@@ -1,85 +1,24 @@
 <script setup lang="ts">
 import CinemaSessionsTable from '~/features/cinemas/components/CinemaSessionsTable.vue'
-import { useCinemas, useCinemaSessions } from '~/features/cinemas/composables/useCinemas'
-import { useMovies } from '~/features/movies/composables/useMovies'
+import { useCinemas, useCinemaSessions } from '~/features/cinemas'
+import { useMovies } from '~/features/movies'
+import { useCinemaSEO } from '~/features/cinemas/composables/useCinemaSEO'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
+import { createEntityMap } from '~/shared/lib/normalize'
 
 const route = useRoute()
 const { handleError } = useErrorHandler()
 
 const cinemaId = computed(() => Number(route.params.id))
 
-// Fetch data
 const { data: cinemas, isLoading: cinemasLoading, error: cinemasError } = useCinemas()
 const { data: sessions, isLoading: sessionsLoading, error: sessionsError } = useCinemaSessions(cinemaId)
 const { data: movies, isLoading: moviesLoading } = useMovies()
 
-// Find current cinema
-const cinema = computed(() => {
-  if (!cinemas.value) return undefined
-  return cinemas.value.find(c => c.id === cinemaId.value)
-})
+const cinemasMap = createEntityMap(cinemas)
+const cinema = computed(() => cinemasMap.value.get(cinemaId.value))
 
-const baseUrl = useBaseUrl()
-
-const canonicalUrl = computed(() => `${baseUrl.value}/cinemas/${cinemaId.value}`)
-
-useHead({
-  title: () => cinema.value ? `${cinema.value.name} - CinemaBook` : 'Загрузка...',
-  meta: [
-    { name: 'description', content: () => cinema.value ? `Кинотеатр ${cinema.value.name}. Адрес: ${cinema.value.address}. Расписание сеансов.` : 'Информация о кинотеатре и расписание сеансов' },
-    { property: 'og:type', content: 'website' },
-    { property: 'og:title', content: () => cinema.value ? `${cinema.value.name} - CinemaBook` : 'CinemaBook' },
-    { property: 'og:description', content: () => cinema.value ? `Кинотеатр ${cinema.value.name}. Адрес: ${cinema.value.address}. Расписание сеансов.` : 'Информация о кинотеатре и расписание сеансов' },
-    { property: 'og:url', content: () => canonicalUrl.value },
-    { property: 'og:site_name', content: 'CinemaBook' },
-    { name: 'twitter:card', content: 'summary' },
-    { name: 'twitter:title', content: () => cinema.value ? `${cinema.value.name} - CinemaBook` : 'CinemaBook' },
-    { name: 'twitter:description', content: () => cinema.value ? `Кинотеатр ${cinema.value.name}. Адрес: ${cinema.value.address}.` : 'Информация о кинотеатре' }
-  ],
-  link: [
-    { rel: 'canonical', href: () => canonicalUrl.value }
-  ]
-})
-
-useHead({
-  script: computed(() => cinema.value
-    ? [
-        {
-          type: 'application/ld+json',
-          innerHTML: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'MovieTheater',
-            'name': cinema.value.name,
-            'address': {
-              '@type': 'PostalAddress',
-              'streetAddress': cinema.value.address
-            }
-          })
-        },
-        {
-          type: 'application/ld+json',
-          innerHTML: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            'itemListElement': [
-              {
-                '@type': 'ListItem',
-                'position': 1,
-                'name': 'Кинотеатры',
-                'item': `${baseUrl.value}/cinemas`
-              },
-              {
-                '@type': 'ListItem',
-                'position': 2,
-                'name': cinema.value.name,
-                'item': canonicalUrl.value
-              }
-            ]
-          })
-        }
-      ]
-    : [])
-})
+useCinemaSEO(cinemaId, cinema)
 
 // Handle errors
 watch([cinemasError, sessionsError], ([cErr, sErr]) => {
@@ -88,8 +27,8 @@ watch([cinemasError, sessionsError], ([cErr, sErr]) => {
 })
 
 // 404 if cinema not found
-watch([cinemas, cinemasLoading], ([c, loading]) => {
-  if (!loading && c && !cinema.value) {
+watch([cinemas, cinemasLoading], ([cinemasData, loading]) => {
+  if (!loading && cinemasData && !cinema.value) {
     throw createError({
       statusCode: 404,
       message: 'Кинотеатр не найден'
@@ -104,7 +43,7 @@ const isLoading = computed(() => cinemasLoading.value || moviesLoading.value)
   <div>
     <!-- Back button -->
     <NuxtLink
-      to="/cinemas"
+      :to="APP_ROUTES.CINEMAS.INDEX"
       class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
     >
       <UIcon

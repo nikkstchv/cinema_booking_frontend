@@ -24,13 +24,13 @@ const isButtonElement = (el: unknown): el is HTMLButtonElement => {
 
 const isBooked = (row: number, seat: number): boolean => {
   return props.bookedSeats.some(
-    s => s.rowNumber === row && s.seatNumber === seat
+    seatItem => seatItem.rowNumber === row && seatItem.seatNumber === seat
   )
 }
 
 const isSelected = (row: number, seat: number): boolean => {
   return selectedSeats.value.some(
-    s => s.rowNumber === row && s.seatNumber === seat
+    seatItem => seatItem.rowNumber === row && seatItem.seatNumber === seat
   )
 }
 
@@ -38,7 +38,7 @@ const toggleSeat = (row: number, seat: number) => {
   if (props.disabled || isBooked(row, seat)) return
 
   const index = selectedSeats.value.findIndex(
-    s => s.rowNumber === row && s.seatNumber === seat
+    seatItem => seatItem.rowNumber === row && seatItem.seatNumber === seat
   )
 
   if (index > -1) {
@@ -107,7 +107,7 @@ const seats = computed(() =>
 
 watch(() => props.bookedSeats, () => {
   selectedSeats.value = selectedSeats.value.filter(
-    s => !isBooked(s.rowNumber, s.seatNumber)
+    seatItem => !isBooked(seatItem.rowNumber, seatItem.seatNumber)
   )
   emit('update:selected', [...selectedSeats.value])
 })

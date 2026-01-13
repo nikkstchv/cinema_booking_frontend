@@ -1,11 +1,12 @@
 import { useApiClient, ApiError } from '../client'
 import { MovieSessionDetailsSchema, BookingResponseSchema, type MovieSessionDetails, type Seat, type BookingResponse } from '../../schemas'
 import { logger } from '../../lib/logger'
+import { API_ENDPOINTS } from '../../lib/api-endpoints'
 
 export const sessionsRepository = {
   async getById(sessionId: number, signal?: AbortSignal): Promise<MovieSessionDetails> {
     const client = useApiClient()
-    const response = await client.get(`/movieSessions/${sessionId}`, { signal })
+    const response = await client.get(API_ENDPOINTS.SESSIONS.DETAIL(sessionId), { signal })
 
     const result = MovieSessionDetailsSchema.safeParse(response)
     if (!result.success) {
@@ -20,7 +21,7 @@ export const sessionsRepository = {
   async book(sessionId: number, seats: Seat[], signal?: AbortSignal): Promise<BookingResponse> {
     const client = useApiClient()
     const response = await client.post(
-      `/movieSessions/${sessionId}/bookings`,
+      API_ENDPOINTS.SESSIONS.BOOKINGS(sessionId),
       { seats },
       { signal }
     )

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RegisterRequestSchema } from '~/shared/schemas'
 import { useAuth } from '../composables/useAuth'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
 import type { FormSubmitEvent } from '#ui/types'
 
 const toast = useToast()
@@ -34,7 +35,8 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       icon: 'i-lucide-check-circle'
     })
 
-    navigateTo('/my-tickets')
+    await nextTick()
+    await navigateTo(APP_ROUTES.MY_TICKETS)
   } catch (error) {
     handleError(error)
   } finally {
@@ -116,7 +118,7 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
       <p class="text-sm text-center text-gray-500">
         Уже есть аккаунт?
         <NuxtLink
-          to="/login"
+          :to="APP_ROUTES.AUTH.LOGIN"
           class="text-indigo-600 hover:text-indigo-500 font-medium"
         >
           Войдите

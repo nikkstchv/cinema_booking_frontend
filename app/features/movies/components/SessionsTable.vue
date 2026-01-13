@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { MovieSession, Cinema } from '~/shared/schemas'
-import { formatDate, formatTime } from '~/shared/lib/formatters'
+import { formatTime } from '~/shared/lib/formatters'
+import { useSessionsGrouping } from '~/shared/composables/useSessionsGrouping'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
 
 const props = defineProps<{
   sessions: MovieSession[]
@@ -8,36 +10,18 @@ const props = defineProps<{
   loading?: boolean
 }>()
 
-// Group sessions by date
-const groupedSessions = computed(() => {
-  const groups: Record<string, MovieSession[]> = {}
+const { groupedSessions, dates } = useSessionsGrouping(computed(() => props.sessions))
 
-  for (const session of props.sessions) {
-    const date = formatDate(session.startTime)
-    if (!groups[date]) {
-      groups[date] = []
-    }
-    groups[date].push(session)
-  }
-
-  // Sort sessions within each date by time
-  for (const date in groups) {
-    const group = groups[date]
-    if (group) {
-      group.sort((a, b) =>
-        new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-      )
-    }
-  }
-
-  return groups
+const cinemasMap = computed(() => {
+  const map = new Map<number, Cinema>()
+  props.cinemas.forEach((cinema) => {
+    map.set(cinema.id, cinema)
+  })
+  return map
 })
 
-const dates = computed(() => Object.keys(groupedSessions.value).sort())
-
-// Get cinema name by ID
 const getCinemaName = (cinemaId: number): string => {
-  const cinema = props.cinemas.find(c => c.id === cinemaId)
+  const cinema = cinemasMap.value.get(cinemaId)
   return cinema?.name ?? 'Неизвестный кинотеатр'
 }
 </script>
@@ -72,7 +56,7 @@ const getCinemaName = (cinemaId: number): string => {
             <NuxtLink
               v-for="session in groupedSessions[date]"
               :key="session.id"
-              :to="`/sessions/${session.id}`"
+              :to="APP_ROUTES.SESSIONS.DETAIL(session.id)"
               class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
             >
               <div class="flex items-center gap-4">

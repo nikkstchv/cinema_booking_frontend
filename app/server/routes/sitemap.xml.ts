@@ -1,4 +1,7 @@
 import { logger } from '~/shared/lib/logger'
+import { MIME_TYPES } from '~/shared/lib/mime-types'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
+import { API_ENDPOINTS } from '~/shared/lib/api-endpoints'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
@@ -6,24 +9,24 @@ export default defineEventHandler(async (event) => {
   const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'https://yourdomain.com'
 
   const routes: string[] = [
-    `${siteUrl}/movies`,
-    `${siteUrl}/cinemas`
+    `${siteUrl}${APP_ROUTES.MOVIES.INDEX}`,
+    `${siteUrl}${APP_ROUTES.CINEMAS.INDEX}`
   ]
 
   try {
     const [moviesRes, cinemasRes] = await Promise.all([
-      fetch(`${baseUrl}/api/movies`).catch(() => null),
-      fetch(`${baseUrl}/api/cinemas`).catch(() => null)
+      fetch(`${baseUrl}${API_ENDPOINTS.MOVIES.ALL}`).catch(() => null),
+      fetch(`${baseUrl}${API_ENDPOINTS.CINEMAS.ALL}`).catch(() => null)
     ])
 
     if (moviesRes?.ok) {
       const movies = await moviesRes.json()
-      routes.push(...movies.map((m: { id: number }) => `${siteUrl}/movies/${m.id}`))
+      routes.push(...movies.map((movie: { id: number }) => `${siteUrl}${APP_ROUTES.MOVIES.DETAIL(movie.id)}`))
     }
 
     if (cinemasRes?.ok) {
       const cinemas = await cinemasRes.json()
-      routes.push(...cinemas.map((c: { id: number }) => `${siteUrl}/cinemas/${c.id}`))
+      routes.push(...cinemas.map((cinema: { id: number }) => `${siteUrl}${APP_ROUTES.CINEMAS.DETAIL(cinema.id)}`))
     }
   } catch (error) {
     logger.error('Error fetching sitemap routes:', error)
@@ -38,6 +41,6 @@ ${routes.map(url => `  <url>
   </url>`).join('\n')}
 </urlset>`
 
-  event.node.res.setHeader('Content-Type', 'application/xml')
+  event.node.res.setHeader('Content-Type', MIME_TYPES.XML)
   return sitemap
 })

@@ -2,6 +2,8 @@
 import type { Booking } from '~/shared/schemas'
 import TicketCard from './TicketCard.vue'
 import { useBookingData } from '../composables/useBookingData'
+import { useBookingCategories, BOOKING_CATEGORIES, CATEGORY_LABELS } from '../composables/useBookingCategories'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
 
 const props = defineProps<{
   bookings: Booking[]
@@ -16,58 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const { getMovie, getCinema, getSession } = useBookingData(computed(() => props.bookings))
-
-type BookingCategory = 'unpaid' | 'future' | 'past'
-
-const BOOKING_CATEGORIES: readonly BookingCategory[] = ['unpaid', 'future', 'past'] as const
-
-const getBookingCategory = (booking: Booking): BookingCategory => {
-  if (!booking.isPaid) {
-    return 'unpaid'
-  }
-
-  const session = getSession(booking)
-  if (!session) {
-    return 'future'
-  }
-
-  const sessionTime = new Date(session.startTime).getTime()
-  const now = Date.now()
-
-  return sessionTime > now ? 'future' : 'past'
-}
-
-const groupedBookings = computed(() => {
-  const groups: Record<BookingCategory, Booking[]> = {
-    unpaid: [],
-    future: [],
-    past: []
-  }
-
-  props.bookings.forEach((booking) => {
-    const category = getBookingCategory(booking)
-    groups[category].push(booking)
-  })
-
-  Object.values(groups).forEach((group) => {
-    group.sort((a, b) => {
-      const sessionA = getSession(a)
-      const sessionB = getSession(b)
-      if (sessionA && sessionB) {
-        return new Date(sessionB.startTime).getTime() - new Date(sessionA.startTime).getTime()
-      }
-      return new Date(b.bookedAt).getTime() - new Date(a.bookedAt).getTime()
-    })
-  })
-
-  return groups
-})
-
-const categoryLabels: Record<BookingCategory, string> = {
-  unpaid: 'Неоплаченные',
-  future: 'Будущие',
-  past: 'Прошедшие'
-}
+const { groupedBookings } = useBookingCategories(computed(() => props.bookings), getSession)
 </script>
 
 <template>
@@ -101,7 +52,7 @@ const categoryLabels: Record<BookingCategory, string> = {
           class="space-y-4"
         >
           <h2 class="text-xl font-semibold text-gray-900 mt-8 first:mt-0">
-            {{ categoryLabels[category] }}
+            {{ CATEGORY_LABELS[category] }}
           </h2>
           <TicketCard
             v-for="booking in groupedBookings[category]"
@@ -134,7 +85,7 @@ const categoryLabels: Record<BookingCategory, string> = {
       <p class="text-gray-500 mb-6">
         Забронируйте места на понравившийся сеанс
       </p>
-      <UButton to="/movies">
+      <UButton :to="APP_ROUTES.MOVIES.INDEX">
         Смотреть фильмы
       </UButton>
     </UCard>

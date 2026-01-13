@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Booking, Movie, Cinema, MovieSession } from '~/shared/schemas'
 import { formatDateTime } from '~/shared/lib/formatters'
+import { sortSeats } from '~/shared/lib/booking-utils'
 import PaymentTimer from './PaymentTimer.vue'
 import BookingStatus from './BookingStatus.vue'
 
@@ -18,10 +19,7 @@ const emit = defineEmits<{
   expired: []
 }>()
 
-const sortedSeats = computed(() => {
-  return [...props.booking.seats]
-    .sort((a, b) => a.rowNumber - b.rowNumber || a.seatNumber - b.seatNumber)
-})
+const sortedSeats = computed(() => sortSeats(props.booking.seats))
 
 const isExpired = ref(false)
 

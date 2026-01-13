@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { MovieSession, Movie } from '~/shared/schemas'
-import { formatDate, formatTime } from '~/shared/lib/formatters'
+import { formatTime } from '~/shared/lib/formatters'
+import { useSessionsGrouping } from '~/shared/composables/useSessionsGrouping'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
 
 const props = defineProps<{
   sessions: MovieSession[]
@@ -8,36 +10,18 @@ const props = defineProps<{
   loading?: boolean
 }>()
 
-// Group sessions by date
-const groupedSessions = computed(() => {
-  const groups: Record<string, MovieSession[]> = {}
+const { groupedSessions, dates } = useSessionsGrouping(computed(() => props.sessions))
 
-  for (const session of props.sessions) {
-    const date = formatDate(session.startTime)
-    if (!groups[date]) {
-      groups[date] = []
-    }
-    groups[date].push(session)
-  }
-
-  // Sort sessions within each date by time
-  for (const date in groups) {
-    const group = groups[date]
-    if (group) {
-      group.sort((a, b) =>
-        new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-      )
-    }
-  }
-
-  return groups
+const moviesMap = computed(() => {
+  const map = new Map<number, Movie>()
+  props.movies.forEach((movie) => {
+    map.set(movie.id, movie)
+  })
+  return map
 })
 
-const dates = computed(() => Object.keys(groupedSessions.value).sort())
-
-// Get movie by ID
 const getMovie = (movieId: number): Movie | undefined => {
-  return props.movies.find(m => m.id === movieId)
+  return moviesMap.value.get(movieId)
 }
 </script>
 
@@ -71,7 +55,7 @@ const getMovie = (movieId: number): Movie | undefined => {
             <NuxtLink
               v-for="session in groupedSessions[date]"
               :key="session.id"
-              :to="`/sessions/${session.id}`"
+              :to="APP_ROUTES.SESSIONS.DETAIL(session.id)"
               class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
             >
               <div class="flex items-center gap-4">

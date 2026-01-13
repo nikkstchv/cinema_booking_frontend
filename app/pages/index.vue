@@ -1,7 +1,8 @@
 <script setup lang="ts">
-// Redirect to movies page
+import { APP_ROUTES } from '~/shared/lib/app-routes'
+
 definePageMeta({
-  redirect: '/movies'
+  redirect: APP_ROUTES.MOVIES.INDEX
 })
 </script>
 

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useCountdown } from '~/composables/useCountdown'
+import { PAYMENT_WARNING_THRESHOLD_SECONDS } from '~/shared/lib/constants'
+import { calculateRemainingSeconds } from '~/shared/lib/booking-utils'
 
 const props = defineProps<{
   bookedAt: string
@@ -10,17 +12,6 @@ const emit = defineEmits<{
   expired: []
 }>()
 
-const calculateRemaining = (): number => {
-  if (import.meta.server) {
-    return 0
-  }
-  const bookedTime = new Date(props.bookedAt).getTime()
-  const expiryTime = bookedTime + props.timeoutSeconds * 1000
-  const now = Date.now()
-  const remaining = Math.floor((expiryTime - now) / 1000)
-  return Math.max(0, remaining)
-}
-
 const initialSeconds = ref(0)
 
 const { formattedTime, isExpired, remainingSeconds, reset, start } = useCountdown(
@@ -29,7 +20,7 @@ const { formattedTime, isExpired, remainingSeconds, reset, start } = useCountdow
 )
 
 onMounted(() => {
-  const newRemaining = calculateRemaining()
+  const newRemaining = calculateRemainingSeconds(props.bookedAt, props.timeoutSeconds)
   initialSeconds.value = newRemaining
   reset(newRemaining)
   start()
@@ -37,13 +28,13 @@ onMounted(() => {
 
 watch(() => [props.bookedAt, props.timeoutSeconds], () => {
   if (import.meta.client) {
-    const newRemaining = calculateRemaining()
+    const newRemaining = calculateRemainingSeconds(props.bookedAt, props.timeoutSeconds)
     reset(newRemaining)
   }
 }, { immediate: false })
 
 const isWarning = computed(() =>
-  remainingSeconds.value > 0 && remainingSeconds.value <= 60
+  remainingSeconds.value > 0 && remainingSeconds.value <= PAYMENT_WARNING_THRESHOLD_SECONDS
 )
 </script>
 

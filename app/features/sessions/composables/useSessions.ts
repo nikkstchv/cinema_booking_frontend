@@ -166,11 +166,11 @@ export function useSessionsBatch(sessionIds: Ref<number[]>) {
         ids.value.map(id => sessionsRepository.getById(id, signal))
       )
 
-      return sessionDetails.map((s): MovieSession => ({
-        id: s.id,
-        movieId: s.movieId,
-        cinemaId: s.cinemaId,
-        startTime: s.startTime
+      return sessionDetails.map((sessionDetail): MovieSession => ({
+        id: sessionDetail.id,
+        movieId: sessionDetail.movieId,
+        cinemaId: sessionDetail.cinemaId,
+        startTime: sessionDetail.startTime
       }))
     },
     enabled: computed(() => ids.value.length > 0),

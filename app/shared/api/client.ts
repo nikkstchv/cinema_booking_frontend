@@ -1,3 +1,5 @@
+import { MIME_TYPES } from '../lib/mime-types'
+
 /**
  * API Client with AbortController support
  *
@@ -59,7 +61,7 @@ export class ApiClient {
       response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': MIME_TYPES.JSON,
           ...(token && { Authorization: `Bearer ${token}` }),
           ...options.headers
         }
@@ -75,7 +77,7 @@ export class ApiClient {
       let errorMessage = 'Запрос не выполнен'
       const contentType = response.headers.get('content-type')
 
-      if (contentType?.includes('application/json')) {
+      if (contentType?.includes(MIME_TYPES.JSON)) {
         try {
           const error = await response.json()
           errorMessage = error.message || error.error || `Ошибка ${response.status}`
@@ -95,7 +97,7 @@ export class ApiClient {
     }
 
     const contentType = response.headers.get('content-type')
-    if (!contentType?.includes('application/json')) {
+    if (!contentType?.includes(MIME_TYPES.JSON)) {
       const text = await response.text()
       if (text) {
         try {

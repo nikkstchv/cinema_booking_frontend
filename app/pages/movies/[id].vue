@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import SessionsTable from '~/features/movies/components/SessionsTable.vue'
-import { useMovies, useMovieSessions } from '~/features/movies/composables/useMovies'
-import { useCinemas } from '~/features/cinemas/composables/useCinemas'
+import { useMovies, useMovieSessions } from '~/features/movies'
+import { useCinemas } from '~/features/cinemas'
+import { useMovieSEO } from '~/features/movies/composables/useMovieSEO'
 import { formatDuration, getFullPosterUrl } from '~/shared/lib/formatters'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
+import { createEntityMap } from '~/shared/lib/normalize'
 
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -10,86 +13,14 @@ const { handleError } = useErrorHandler()
 
 const movieId = computed(() => Number(route.params.id))
 
-// Fetch data
 const { data: movies, isLoading: moviesLoading, error: moviesError } = useMovies()
 const { data: sessions, isLoading: sessionsLoading, error: sessionsError } = useMovieSessions(movieId)
 const { data: cinemas, isLoading: cinemasLoading } = useCinemas()
 
-// Find current movie
-const movie = computed(() => {
-  if (!movies.value) return undefined
-  return movies.value.find(m => m.id === movieId.value)
-})
+const moviesMap = createEntityMap(movies)
+const movie = computed(() => moviesMap.value.get(movieId.value))
 
-const baseUrl = useBaseUrl()
-
-const canonicalUrl = computed(() => `${baseUrl.value}/movies/${movieId.value}`)
-const ogImageUrl = computed(() => movie.value ? getFullPosterUrl(movie.value.posterImage, config.public.apiBase) : '')
-
-useHead({
-  title: () => movie.value ? `${movie.value.title} - CinemaBook` : 'Загрузка...',
-  meta: [
-    { name: 'description', content: () => movie.value?.description || 'Информация о фильме и доступные сеансы' },
-    { property: 'og:type', content: 'website' },
-    { property: 'og:title', content: () => movie.value?.title || 'CinemaBook' },
-    { property: 'og:description', content: () => movie.value?.description || 'Информация о фильме и доступные сеансы' },
-    { property: 'og:image', content: () => ogImageUrl.value },
-    { property: 'og:url', content: () => canonicalUrl.value },
-    { property: 'og:site_name', content: 'CinemaBook' },
-    { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: () => movie.value?.title || 'CinemaBook' },
-    { name: 'twitter:description', content: () => movie.value?.description || 'Информация о фильме и доступные сеансы' },
-    { name: 'twitter:image', content: () => ogImageUrl.value }
-  ],
-  link: [
-    { rel: 'canonical', href: () => canonicalUrl.value },
-    ...(movie.value ? [{ rel: 'preload', as: 'image' as const, href: () => ogImageUrl.value }] : [])
-  ]
-})
-
-// JSON-LD schema for movie
-useHead({
-  script: computed(() => movie.value
-    ? [
-        {
-          type: 'application/ld+json',
-          innerHTML: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Movie',
-            'name': movie.value.title,
-            'description': movie.value.description,
-            'dateCreated': movie.value.year.toString(),
-            'aggregateRating': {
-              '@type': 'AggregateRating',
-              'ratingValue': movie.value.rating,
-              'bestRating': 10
-            }
-          })
-        },
-        {
-          type: 'application/ld+json',
-          innerHTML: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            'itemListElement': [
-              {
-                '@type': 'ListItem',
-                'position': 1,
-                'name': 'Фильмы',
-                'item': `${baseUrl.value}/movies`
-              },
-              {
-                '@type': 'ListItem',
-                'position': 2,
-                'name': movie.value.title,
-                'item': canonicalUrl.value
-              }
-            ]
-          })
-        }
-      ]
-    : [])
-})
+useMovieSEO(movieId, movie)
 
 // Handle errors
 watch([moviesError, sessionsError], ([mErr, sErr]) => {
@@ -98,8 +29,8 @@ watch([moviesError, sessionsError], ([mErr, sErr]) => {
 })
 
 // 404 if movie not found
-watch([movies, moviesLoading], ([m, loading]) => {
-  if (!loading && m && !movie.value) {
+watch([movies, moviesLoading], ([moviesData, loading]) => {
+  if (!loading && moviesData && !movie.value) {
     throw createError({
       statusCode: 404,
       message: 'Фильм не найден'
@@ -118,7 +49,7 @@ const isLoading = computed(() => moviesLoading.value || cinemasLoading.value)
   <div>
     <!-- Back button -->
     <NuxtLink
-      to="/movies"
+      :to="APP_ROUTES.MOVIES.INDEX"
       class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
     >
       <UIcon

@@ -1,11 +1,12 @@
 import { useApiClient, ApiError } from '../client'
 import { AuthResponseSchema, type LoginRequest, type RegisterRequest, type RegisterApiRequest, type AuthResponse } from '../../schemas'
 import { logger } from '../../lib/logger'
+import { API_ENDPOINTS } from '../../lib/api-endpoints'
 
 export const authRepository = {
   async login(credentials: LoginRequest, signal?: AbortSignal): Promise<AuthResponse> {
     const client = useApiClient()
-    const response = await client.post('/login', credentials, { signal })
+    const response = await client.post(API_ENDPOINTS.AUTH.LOGIN, credentials, { signal })
 
     const result = AuthResponseSchema.safeParse(response)
     if (!result.success) {
@@ -23,7 +24,7 @@ export const authRepository = {
       username: credentials.username,
       password: credentials.password
     }
-    const response = await client.post('/register', apiRequest, { signal })
+    const response = await client.post(API_ENDPOINTS.AUTH.REGISTER, apiRequest, { signal })
 
     const result = AuthResponseSchema.safeParse(response)
     if (!result.success) {

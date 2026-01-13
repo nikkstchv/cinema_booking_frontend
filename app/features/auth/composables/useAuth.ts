@@ -1,6 +1,9 @@
 import { authRepository } from '~/shared/api/repositories'
 import { decodeJWT, isTokenExpired } from '~/shared/lib/jwt'
 import type { LoginRequest, RegisterRequest } from '~/shared/schemas'
+import { useStorage } from '~/shared/composables/useStorage'
+import { AUTH_TOKEN_MAX_AGE_SECONDS } from '~/shared/lib/constants'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
 
 interface User {
   id: number
@@ -8,7 +11,7 @@ interface User {
 
 /**
  * Auth composable - manages authentication state
- * Uses useCookie for SSR-safe token storage and useState for user state
+ * Uses storage abstraction for SSR-safe token storage and useState for user state
  *
  * @returns Object with auth state and methods:
  * - token: Computed ref with JWT token
@@ -20,11 +23,12 @@ interface User {
  * - logout: Logout current user
  */
 export function useAuth() {
-  const token = useCookie('auth_token', {
-    maxAge: 60 * 60,
+  const tokenStorage = useStorage('auth_token', {
+    maxAge: AUTH_TOKEN_MAX_AGE_SECONDS,
     secure: import.meta.env.PROD,
     sameSite: 'strict'
   })
+  const token = tokenStorage.value
 
   const user = useState<User | null>('auth_user', () => null)
 
@@ -83,7 +87,7 @@ export function useAuth() {
   const logout = () => {
     token.value = null
     user.value = null
-    navigateTo('/movies')
+    navigateTo(APP_ROUTES.MOVIES.INDEX)
   }
 
   return {

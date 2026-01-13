@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useAuth } from '~/features/auth/composables/useAuth'
+import { useAuth } from '~/features/auth'
 import { NAV_ITEMS } from '~/shared/lib/constants'
+import { APP_ROUTES } from '~/shared/lib/app-routes'
 
 const { isAuthenticated, logout } = useAuth()
 const showLogoutConfirm = ref(false)
@@ -21,7 +22,7 @@ const navigation = computed(() => {
     return items
   }
 
-  return items.filter(item => item.to !== '/my-tickets')
+  return items.filter(item => item.to !== APP_ROUTES.MY_TICKETS)
 })
 </script>
 
@@ -40,7 +41,7 @@ const navigation = computed(() => {
       <aside class="w-64 bg-white border-r border-gray-200 min-h-screen fixed left-0 top-0">
         <div class="p-4 border-b border-gray-200">
           <NuxtLink
-            to="/movies"
+            :to="APP_ROUTES.MOVIES.INDEX"
             class="flex items-center gap-2"
           >
             <UIcon
@@ -76,7 +77,7 @@ const navigation = computed(() => {
             <template #fallback>
               <ul class="space-y-1">
                 <li
-                  v-for="item in NAV_ITEMS.filter(item => item.to !== '/my-tickets')"
+                  v-for="item in NAV_ITEMS.filter((item) => item.to !== APP_ROUTES.MY_TICKETS)"
                   :key="item.to"
                 >
                   <NuxtLink
@@ -111,7 +112,7 @@ const navigation = computed(() => {
               </template>
               <template v-else>
                 <NuxtLink
-                  to="/login"
+                  :to="APP_ROUTES.AUTH.LOGIN"
                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
                   active-class="bg-indigo-50 text-indigo-700 font-medium"
                 >
@@ -124,7 +125,7 @@ const navigation = computed(() => {
               </template>
               <template #fallback>
                 <NuxtLink
-                  to="/login"
+                  :to="APP_ROUTES.AUTH.LOGIN"
                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
                   active-class="bg-indigo-50 text-indigo-700 font-medium"
                 >
